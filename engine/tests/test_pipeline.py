@@ -42,6 +42,21 @@ def test_flags_the_out_of_place_object_and_recovers() -> None:
     assert verdicts[30].flagged is False
 
 
+def test_a_persistent_new_scene_keeps_flagging() -> None:
+    pipeline, _store = _pipeline()
+    frames = list(SyntheticScene(total=40, anomaly_at=tuple(range(20, 40))).frames())
+
+    flagged_tail = []
+    for frame in frames:
+        verdict = pipeline.process(frame)
+        assert verdict is not None
+        if frame.id >= 22 and not verdict.warming:
+            flagged_tail.append(verdict.flagged)
+
+    assert len(flagged_tail) > 5
+    assert all(flagged_tail)
+
+
 def test_anomaly_frames_are_not_learned_as_normal() -> None:
     pipeline, store = _pipeline()
     scene = SyntheticScene(total=40, anomaly_at=(24, 25, 26))

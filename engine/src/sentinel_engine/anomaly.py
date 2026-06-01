@@ -10,6 +10,7 @@ class Decision:
     flagged: bool
     threshold: float
     warming: bool
+    learn: bool
 
 
 class AnomalyDetector:
@@ -44,14 +45,18 @@ class AnomalyDetector:
             or point_count < self._warmup
             or len(self._scores) < self._warmup
         ):
-            return Decision(flagged=False, threshold=0.0, warming=True)
+            return Decision(
+                flagged=False, threshold=0.0, warming=True, learn=True
+            )
         mean = fmean(self._scores)
         spread = pstdev(self._scores)
         z = 3.0 - 2.0 * self._sensitivity
         gap = max(z * spread, self._margin)
         threshold = min(1.0, max(0.0, mean - gap))
+        flagged = top_score < threshold
+        learn = not flagged and top_score >= mean
         return Decision(
-            flagged=top_score < threshold, threshold=threshold, warming=False
+            flagged=flagged, threshold=threshold, warming=False, learn=learn
         )
 
 

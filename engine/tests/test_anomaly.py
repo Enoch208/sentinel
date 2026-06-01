@@ -18,6 +18,21 @@ def test_flags_a_low_score_once_settled() -> None:
     assert detector.decide(0.50, point_count=100).flagged is True
 
 
+def test_learn_gate_absorbs_only_confidently_normal() -> None:
+    detector = AnomalyDetector(warmup=5, window=20, sensitivity=0.5)
+    for _ in range(10):
+        detector.observe(0.98)
+
+    assert detector.decide(0.99, point_count=100).learn is True
+    assert detector.decide(0.95, point_count=100).learn is False
+    assert detector.decide(0.80, point_count=100).learn is False
+
+
+def test_warmup_learns_to_build_the_baseline() -> None:
+    detector = AnomalyDetector(warmup=5, window=20, sensitivity=0.5)
+    assert detector.decide(0.9, point_count=2).learn is True
+
+
 def test_higher_sensitivity_raises_threshold() -> None:
     scores = [0.95, 0.80, 0.88, 0.70, 0.92, 0.78, 0.85, 0.90]
 

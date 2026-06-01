@@ -53,7 +53,7 @@ class Pipeline:
         decision = self._detector.decide(top, self._store.count())
         self.last_decide_ms = (time.perf_counter() - queried) * 1000.0
 
-        if not decision.flagged:
+        if decision.learn:
             self._store.upsert(
                 frame.id,
                 vector,
