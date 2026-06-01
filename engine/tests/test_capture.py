@@ -4,7 +4,11 @@ import cv2
 import numpy as np
 import pytest
 
-from sentinel_engine.capture import OpenCVCamera, SyntheticScene
+from sentinel_engine.capture import (
+    LatestFrameCamera,
+    OpenCVCamera,
+    SyntheticScene,
+)
 
 
 class _FakeCapture:
@@ -14,6 +18,9 @@ class _FakeCapture:
         self.released = False
 
     def isOpened(self) -> bool:
+        return True
+
+    def set(self, prop: int, value: float) -> bool:
         return True
 
     def read(self) -> tuple[bool, np.ndarray | None]:
@@ -30,6 +37,9 @@ class _FakeCapture:
 class _ClosedCapture:
     def isOpened(self) -> bool:
         return False
+
+    def set(self, prop: int, value: float) -> bool:
+        return True
 
     def read(self) -> tuple[bool, None]:
         return False, None
@@ -74,3 +84,27 @@ def test_opencv_camera_raises_when_camera_will_not_open(
     monkeypatch.setattr(cv2, "VideoCapture", lambda index: _ClosedCapture())
     with pytest.raises(RuntimeError):
         list(OpenCVCamera(0).frames())
+
+
+def test_latest_frame_camera_drops_stale_and_terminates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    frames = [np.full((4, 4, 3), value, dtype=np.uint8) for value in range(5)]
+    capture = _FakeCapture(frames)
+    monkeypatch.setattr(cv2, "VideoCapture", lambda index: capture)
+
+    produced = list(LatestFrameCamera(0).frames())
+    ids = [frame.id for frame in produced]
+
+    assert 1 <= len(produced) <= 5
+    assert ids == sorted(ids)
+    assert len(set(ids)) == len(ids)
+    assert capture.released is True
+
+
+def test_latest_frame_camera_raises_when_camera_will_not_open(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cv2, "VideoCapture", lambda index: _ClosedCapture())
+    with pytest.raises(RuntimeError):
+        list(LatestFrameCamera(0).frames())

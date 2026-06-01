@@ -95,7 +95,7 @@ def create_app(
 def run(host: str = "127.0.0.1", port: int = 8765) -> None:
     import uvicorn
 
-    from sentinel_engine.capture import OpenCVCamera
+    from sentinel_engine.capture import LatestFrameCamera
     from sentinel_engine.config import Settings
     from sentinel_engine.controller import build_controller
     from sentinel_engine.embed import FastEmbedImageEmbedder
@@ -105,7 +105,7 @@ def run(host: str = "127.0.0.1", port: int = 8765) -> None:
     embedder = FastEmbedImageEmbedder(settings.model_name, settings.cache_dir)
     session = SessionLog(Path("sessions") / "session.jsonl")
     controller = build_controller(settings, embedder, session=session)
-    app = create_app(lambda: controller, lambda: OpenCVCamera())
+    app = create_app(lambda: controller, lambda: LatestFrameCamera())
     uvicorn.run(app, host=host, port=port)
 
 
