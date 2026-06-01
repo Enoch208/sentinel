@@ -143,6 +143,10 @@ export default function App() {
             />
             <Metric label="fps" value={metric ? metric.fps.toFixed(1) : "—"} />
             <Metric
+              label="anomaly"
+              value={metric ? `${metric.anomaly_ms.toFixed(0)} ms` : "—"}
+            />
+            <Metric
               label="embed"
               value={metric ? `${metric.embed_ms.toFixed(0)} ms` : "—"}
             />
@@ -151,8 +155,18 @@ export default function App() {
               value={metric ? `${metric.query_ms.toFixed(1)} ms` : "—"}
             />
             <Metric
+              label="footprint"
+              value={metric ? `${metric.memory_mb.toFixed(0)} MB` : "—"}
+            />
+            <Metric
               label="memory"
               value={metric ? `${metric.point_count} pts` : "—"}
+            />
+            <Metric
+              label="quantization"
+              value={
+                metric ? (metric.quantized ? "on" : "off (local)") : "—"
+              }
             />
           </div>
 

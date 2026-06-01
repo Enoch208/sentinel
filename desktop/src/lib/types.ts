@@ -23,7 +23,10 @@ export type MetricEvent = {
   fps: number;
   embed_ms: number;
   query_ms: number;
+  anomaly_ms: number;
+  memory_mb: number;
   point_count: number;
+  quantized: boolean;
 };
 
 export type TwinsEvent = {
