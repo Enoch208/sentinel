@@ -259,7 +259,7 @@ export const CTA = {
     href: `${BRAND.github}/releases/latest`,
   },
   secondary: { label: "View on GitHub", href: BRAND.github },
-  note: "Apple Silicon · fully offline · unsigned — right-click the app and choose Open on first launch.",
+  note: "Apple Silicon · fully offline · unsigned — if macOS says “damaged”, the release notes have the one-line fix to open it.",
 } as const;
 
 export const FOOTER = {
