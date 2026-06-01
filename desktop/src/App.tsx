@@ -70,7 +70,7 @@ export default function App() {
     <div className="app">
       <header className="bar">
         <div className="brand">
-          <span className="dot" />
+          <img className="logo" src="/logo.png" alt="Sentinel" />
           <span className="name">Sentinel</span>
         </div>
         <span className={`status status--${status}`}>{status}</span>

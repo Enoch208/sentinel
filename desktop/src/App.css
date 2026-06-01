@@ -39,12 +39,11 @@ body {
   gap: 10px;
 }
 
-.brand .dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--amber);
-  box-shadow: 0 0 10px rgba(252, 211, 77, 0.85);
+.brand .logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  mix-blend-mode: screen;
 }
 
 .brand .name {
