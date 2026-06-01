@@ -18,6 +18,7 @@ export type EngineState = {
   metric: MetricEvent | null;
   twins: TwinsEvent | null;
   send: (command: Command) => void;
+  reconnect: () => void;
 };
 
 export function useEngineSocket(url: string): EngineState {
@@ -26,6 +27,7 @@ export function useEngineSocket(url: string): EngineState {
   const [verdict, setVerdict] = useState<VerdictEvent | null>(null);
   const [metric, setMetric] = useState<MetricEvent | null>(null);
   const [twins, setTwins] = useState<TwinsEvent | null>(null);
+  const [nonce, setNonce] = useState(0);
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export function useEngineSocket(url: string): EngineState {
     };
 
     return () => socket.close();
-  }, [url]);
+  }, [url, nonce]);
 
   const send = useCallback((command: Command) => {
     const socket = socketRef.current;
@@ -66,5 +68,7 @@ export function useEngineSocket(url: string): EngineState {
     }
   }, []);
 
-  return { status, frame, verdict, metric, twins, send };
+  const reconnect = useCallback(() => setNonce((value) => value + 1), []);
+
+  return { status, frame, verdict, metric, twins, send, reconnect };
 }

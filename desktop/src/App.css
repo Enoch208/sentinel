@@ -107,12 +107,79 @@ body {
 }
 
 .empty {
-  max-width: 360px;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   text-align: center;
   color: var(--muted);
   font-weight: 300;
   line-height: 1.6;
   padding: 24px;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.empty .mono {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.empty .ghost {
+  margin-top: 12px;
+  padding: 8px 18px;
+}
+
+.coach {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(252, 211, 77, 0.35);
+  background: rgba(4, 5, 6, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.coach-step {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--amber);
+}
+
+.coach-text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text);
+}
+
+.coach-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.coach-actions .ghost {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.show-how {
+  width: 100%;
+  color: var(--amber);
+  border-color: rgba(252, 211, 77, 0.3);
 }
 
 .badge {

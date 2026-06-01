@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { VerdictEvent } from "./lib/types";
 import { useEngineSocket } from "./lib/useEngineSocket";
@@ -7,6 +7,31 @@ import "./App.css";
 const ENGINE_URL = "ws://127.0.0.1:8765/ws";
 const MODES = ["watch", "teach", "explore"] as const;
 type Mode = (typeof MODES)[number];
+
+type Advance = "settled" | "flagged" | null;
+
+const TOUR: ReadonlyArray<{ mode: Mode; text: string; auto: Advance }> = [
+  {
+    mode: "watch",
+    text: "Sentinel is learning what's normal. Hold the scene steady for a few seconds.",
+    auto: "settled",
+  },
+  {
+    mode: "watch",
+    text: "Now introduce something out of place — a tool, a hand, an object.",
+    auto: "flagged",
+  },
+  {
+    mode: "teach",
+    text: "Caught it. Mark it 👍 expected or 👎 anomaly to tune what counts as normal.",
+    auto: null,
+  },
+  {
+    mode: "explore",
+    text: "Open Explore to see its visual twins — everything that looks like this.",
+    auto: null,
+  },
+];
 
 type ViewState = {
   key: "idle" | "warming" | "normal" | "flagged";
@@ -21,13 +46,28 @@ function stateOf(verdict: VerdictEvent | null): ViewState {
 }
 
 export default function App() {
-  const { status, frame, verdict, metric, twins, send } =
+  const { status, frame, verdict, metric, twins, send, reconnect } =
     useEngineSocket(ENGINE_URL);
   const [mode, setMode] = useState<Mode>("watch");
   const [sensitivity, setSensitivity] = useState(0.5);
+  const [tourStep, setTourStep] = useState<number | null>(null);
 
   const state = useMemo(() => stateOf(verdict), [verdict]);
   const score = verdict?.score ?? null;
+
+  useEffect(() => {
+    if (tourStep !== null) setMode(TOUR[tourStep].mode);
+  }, [tourStep]);
+
+  useEffect(() => {
+    if (tourStep === null) return;
+    const step = TOUR[tourStep];
+    if (step.auto === "settled" && verdict && !verdict.warming) {
+      setTourStep(tourStep + 1);
+    } else if (step.auto === "flagged" && verdict?.flagged) {
+      setTourStep(tourStep + 1);
+    }
+  }, [verdict, tourStep]);
 
   const onSensitivity = (value: number) => {
     setSensitivity(value);
@@ -42,6 +82,11 @@ export default function App() {
     if (verdict) send({ type: "twins", frame_id: verdict.frame_id, k: 4 });
   };
 
+  const advanceTour = () => {
+    if (tourStep === null) return;
+    setTourStep(tourStep >= TOUR.length - 1 ? null : tourStep + 1);
+  };
+
   return (
     <div className="app">
       <header className="bar">
@@ -54,21 +99,56 @@ export default function App() {
 
       <main className="stage">
         <section className={`viewport viewport--${state.key}`}>
-          {frame ? (
+          {tourStep !== null && (
+            <div className="coach">
+              <span className="coach-step">
+                {tourStep + 1}/{TOUR.length}
+              </span>
+              <p className="coach-text">{TOUR[tourStep].text}</p>
+              <div className="coach-actions">
+                <button className="ghost" onClick={() => setTourStep(null)}>
+                  skip
+                </button>
+                {TOUR[tourStep].auto === null && (
+                  <button className="ghost" onClick={advanceTour}>
+                    {tourStep >= TOUR.length - 1 ? "done" : "next"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {status === "closed" ? (
+            <div className="empty">
+              <p className="empty-title">Engine offline</p>
+              <p className="mono">cd engine &amp;&amp; uv run sentinel-serve</p>
+              <button className="ghost" onClick={reconnect}>
+                reconnect
+              </button>
+            </div>
+          ) : frame ? (
             <img
               className="feed"
               src={`data:image/jpeg;base64,${frame.jpeg}`}
               alt="live perception"
             />
-          ) : (
+          ) : status === "open" ? (
             <div className="empty">
-              Show me your space — I’ll learn what’s normal and flag what isn’t.
+              Camera starting… if this hangs, grant camera permission to your
+              terminal.
             </div>
+          ) : (
+            <div className="empty">Connecting to the engine…</div>
           )}
-          <div className="badge">{state.label}</div>
+
+          {frame && <div className="badge">{state.label}</div>}
         </section>
 
         <aside className="panel">
+          <button className="ghost show-how" onClick={() => setTourStep(0)}>
+            show me how
+          </button>
+
           <div className="modes">
             {MODES.map((option) => (
               <button
@@ -164,9 +244,7 @@ export default function App() {
             />
             <Metric
               label="quantization"
-              value={
-                metric ? (metric.quantized ? "on" : "off (local)") : "—"
-              }
+              value={metric ? (metric.quantized ? "on" : "off (local)") : "—"}
             />
           </div>
 
