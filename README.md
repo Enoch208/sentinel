@@ -51,7 +51,21 @@ Every figure in the dossier comes from the running engine, never hardcoded:
 - **Detection, not retrieval.** The headline is surfacing the unknown, deliberately not a "find my keys" clone.
 - **Honest metrics.** The dossier reflects the real engine, trade-offs and all.
 
-## Run it (offline, two processes)
+## Run it (offline)
+
+**One command** (needs `uv`, `npm`, and `cargo`):
+
+```bash
+make setup    # first time: install all dependencies
+make run      # stops any stale engine, starts it, waits for it, opens the app
+make demo     # headless: video anomaly + audio + precision/recall (no camera)
+make test     # every gate: engine pytest/ruff/mypy + desktop vitest/build
+```
+
+`make run` launches the engine, waits until it actually binds `ws://127.0.0.1:8765`, then opens the desktop app and cleans up the engine on exit. Grant camera permission when macOS asks. The first `tauri dev` compiles the Rust shell (a few minutes).
+
+<details>
+<summary>Or run the two processes by hand</summary>
 
 **Engine** — Python 3.12 via [`uv`](https://docs.astral.sh/uv/) (the ML wheels lag newer Python; the engine pins 3.12):
 
@@ -73,6 +87,8 @@ cd desktop
 npm install
 npm run tauri dev
 ```
+
+</details>
 
 Point the camera at a scene → it learns "normal" → introduce something out of place → the view glows amber with **⚠ out of place** → switch to Teach and hit 👍 to suppress it → open Explore for visual twins, per-zone facets, the watcher's end-of-walk report, and the 2D memory map → **turn off wifi; it keeps working.**
 
