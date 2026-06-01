@@ -47,6 +47,7 @@ def create_app(
                 event = controller.process_frame(frame)
                 if event is None:
                     continue
+                _offer(loop, outbox, controller.frame_event(frame).model_dump())
                 _offer(loop, outbox, event.model_dump())
                 _offer(loop, outbox, controller.metrics().model_dump())
 

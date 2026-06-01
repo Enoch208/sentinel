@@ -33,6 +33,15 @@ def test_process_flags_and_reports_metrics() -> None:
     assert metric.fps >= 0.0
 
 
+def test_frame_event_carries_jpeg() -> None:
+    controller = _controller()
+    frame = next(SyntheticScene(total=1, anomaly_at=()).frames())
+    event = controller.frame_event(frame)
+    assert event.type == "frame"
+    assert event.frame_id == frame.id
+    assert len(event.jpeg) > 0
+
+
 def test_sensitivity_command_acks() -> None:
     controller = _controller()
     ack = controller.handle_command({"type": "sensitivity", "value": 0.9})

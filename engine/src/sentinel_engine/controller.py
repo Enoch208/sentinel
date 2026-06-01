@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from sentinel_engine.anomaly import AnomalyDetector
+from sentinel_engine.codec import to_jpeg_base64
 from sentinel_engine.config import Settings
 from sentinel_engine.embed import Embedder
 from sentinel_engine.explore import Explorer
@@ -17,6 +18,7 @@ from sentinel_engine.protocol import (
     COMMAND_ADAPTER,
     AckEvent,
     ExportCommand,
+    FrameEvent,
     MetricEvent,
     ResetCommand,
     SensitivityCommand,
@@ -42,6 +44,8 @@ class EngineController:
         recent: RecentFrames,
         session: SessionLog | None = None,
         fps_window: int = 30,
+        jpeg_width: int = 480,
+        jpeg_quality: int = 70,
     ) -> None:
         self._pipeline = pipeline
         self._store = store
@@ -52,6 +56,12 @@ class EngineController:
         self._session = session
         self._lock = threading.Lock()
         self._stamps: deque[float] = deque(maxlen=fps_window)
+        self._jpeg_width = jpeg_width
+        self._jpeg_quality = jpeg_quality
+
+    def frame_event(self, frame: Frame) -> FrameEvent:
+        jpeg = to_jpeg_base64(frame.image, self._jpeg_width, self._jpeg_quality)
+        return FrameEvent(frame_id=frame.id, ts=frame.ts, jpeg=jpeg)
 
     def process_frame(self, frame: Frame) -> VerdictEvent | None:
         with self._lock:
@@ -157,5 +167,13 @@ def build_controller(
     teach = TeachController(store, recent)
     explorer = Explorer(store, recent)
     return EngineController(
-        pipeline, store, detector, teach, explorer, recent, session
+        pipeline,
+        store,
+        detector,
+        teach,
+        explorer,
+        recent,
+        session,
+        jpeg_width=settings.jpeg_width,
+        jpeg_quality=settings.jpeg_quality,
     )

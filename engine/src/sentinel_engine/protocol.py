@@ -39,6 +39,13 @@ class VerdictEvent(BaseModel):
         )
 
 
+class FrameEvent(BaseModel):
+    type: Literal["frame"] = "frame"
+    frame_id: int
+    ts: float
+    jpeg: str
+
+
 class MetricEvent(BaseModel):
     type: Literal["metric"] = "metric"
     fps: float

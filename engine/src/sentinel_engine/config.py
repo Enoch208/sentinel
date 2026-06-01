@@ -16,3 +16,5 @@ class Settings:
     sensitivity: float = 0.5
     margin: float = 0.05
     quantize: bool = True
+    jpeg_width: int = 480
+    jpeg_quality: int = 70
