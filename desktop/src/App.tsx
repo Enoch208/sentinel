@@ -6,12 +6,14 @@ import { useEngineSocket } from "./lib/useEngineSocket";
 import "./App.css";
 
 const ENGINE_URL = "ws://127.0.0.1:8765/ws";
+const ZONES = ["default", "bench", "shelf", "panel"] as const;
 
 export default function App() {
-  const { status, frame, verdict, metric, twins, send, reconnect } =
+  const { status, frame, verdict, metric, twins, facet, send, reconnect } =
     useEngineSocket(ENGINE_URL);
   const [mode, setMode] = useState<Mode>("watch");
   const [sensitivity, setSensitivity] = useState(0.5);
+  const [zone, setZone] = useState<string>("default");
   const [tourStep, setTourStep] = useState<number | null>(null);
 
   const state = useMemo(() => stateOf(verdict), [verdict]);
@@ -20,6 +22,10 @@ export default function App() {
   useEffect(() => {
     if (tourStep !== null) setMode(TOUR[tourStep].mode);
   }, [tourStep]);
+
+  useEffect(() => {
+    if (mode === "explore") send({ type: "facet" });
+  }, [mode, send]);
 
   useEffect(() => {
     if (tourStep === null) return;
@@ -163,6 +169,33 @@ export default function App() {
                   <li key={twin.id}>
                     <span>frame {twin.id}</span>
                     <span className="mono">{twin.score.toFixed(3)}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <span className="eyebrow">zone</span>
+              <div className="modes">
+                {ZONES.map((option) => (
+                  <button
+                    key={option}
+                    className={`chip ${zone === option ? "chip--on" : ""}`}
+                    onClick={() => {
+                      setZone(option);
+                      send({ type: "zone", zone: option });
+                    }}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+
+              <ul className="twins">
+                {facet?.facets.map((entry) => (
+                  <li key={entry.zone}>
+                    <span>{entry.zone}</span>
+                    <span className="mono">
+                      {entry.memory} pts · {entry.flags} ⚠
+                    </span>
                   </li>
                 ))}
               </ul>

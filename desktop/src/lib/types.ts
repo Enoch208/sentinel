@@ -35,6 +35,13 @@ export type TwinsEvent = {
   results: NeighborDTO[];
 };
 
+export type ZoneFacet = { zone: string; memory: number; flags: number };
+
+export type FacetEvent = {
+  type: "facet";
+  facets: ZoneFacet[];
+};
+
 export type AckEvent = {
   type: "ack";
   command: string;
@@ -47,6 +54,7 @@ export type EngineEvent =
   | VerdictEvent
   | MetricEvent
   | TwinsEvent
+  | FacetEvent
   | AckEvent;
 
 export type Command =
@@ -54,4 +62,6 @@ export type Command =
   | { type: "teach"; frame_id: number; label: "expected" | "anomaly" }
   | { type: "twins"; frame_id: number; k: number }
   | { type: "reset" }
-  | { type: "export"; path: string };
+  | { type: "export"; path: string }
+  | { type: "zone"; zone: string }
+  | { type: "facet" };

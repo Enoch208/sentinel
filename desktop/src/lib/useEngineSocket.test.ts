@@ -83,6 +83,14 @@ describe("useEngineSocket", () => {
       }),
     );
     expect(result.current.metric?.fps).toBe(12);
+
+    act(() =>
+      socket.emit({
+        type: "facet",
+        facets: [{ zone: "bench", memory: 4, flags: 2 }],
+      }),
+    );
+    expect(result.current.facet?.facets[0].zone).toBe("bench");
   });
 
   it("sends commands only when open", () => {

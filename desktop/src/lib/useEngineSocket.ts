@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   Command,
   EngineEvent,
+  FacetEvent,
   FrameEvent,
   MetricEvent,
   TwinsEvent,
@@ -17,6 +18,7 @@ export type EngineState = {
   verdict: VerdictEvent | null;
   metric: MetricEvent | null;
   twins: TwinsEvent | null;
+  facet: FacetEvent | null;
   send: (command: Command) => void;
   reconnect: () => void;
 };
@@ -27,6 +29,7 @@ export function useEngineSocket(url: string): EngineState {
   const [verdict, setVerdict] = useState<VerdictEvent | null>(null);
   const [metric, setMetric] = useState<MetricEvent | null>(null);
   const [twins, setTwins] = useState<TwinsEvent | null>(null);
+  const [facet, setFacet] = useState<FacetEvent | null>(null);
   const [nonce, setNonce] = useState(0);
   const socketRef = useRef<WebSocket | null>(null);
 
@@ -53,6 +56,9 @@ export function useEngineSocket(url: string): EngineState {
         case "twins":
           setTwins(event);
           break;
+        case "facet":
+          setFacet(event);
+          break;
         case "ack":
           break;
       }
@@ -70,5 +76,5 @@ export function useEngineSocket(url: string): EngineState {
 
   const reconnect = useCallback(() => setNonce((value) => value + 1), []);
 
-  return { status, frame, verdict, metric, twins, send, reconnect };
+  return { status, frame, verdict, metric, twins, facet, send, reconnect };
 }
