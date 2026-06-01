@@ -182,6 +182,23 @@ body {
   border-color: rgba(252, 211, 77, 0.3);
 }
 
+.map {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #060708;
+}
+
+.node {
+  fill: rgba(255, 255, 255, 0.35);
+}
+
+.node--flag {
+  fill: var(--amber);
+  filter: drop-shadow(0 0 0.04px rgba(252, 211, 77, 0.9));
+}
+
 .badge {
   position: absolute;
   left: 16px;

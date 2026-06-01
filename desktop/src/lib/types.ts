@@ -50,6 +50,19 @@ export type ReportEvent = {
   clusters: Cluster[];
 };
 
+export type MapPoint = {
+  id: number;
+  x: number;
+  y: number;
+  flagged: boolean;
+  zone: string;
+};
+
+export type MapEvent = {
+  type: "map";
+  points: MapPoint[];
+};
+
 export type AckEvent = {
   type: "ack";
   command: string;
@@ -64,6 +77,7 @@ export type EngineEvent =
   | TwinsEvent
   | FacetEvent
   | ReportEvent
+  | MapEvent
   | AckEvent;
 
 export type Command =
@@ -74,4 +88,5 @@ export type Command =
   | { type: "export"; path: string }
   | { type: "zone"; zone: string }
   | { type: "facet" }
-  | { type: "report" };
+  | { type: "report" }
+  | { type: "map" };

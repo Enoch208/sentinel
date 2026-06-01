@@ -9,8 +9,18 @@ const ENGINE_URL = "ws://127.0.0.1:8765/ws";
 const ZONES = ["default", "bench", "shelf", "panel"] as const;
 
 export default function App() {
-  const { status, frame, verdict, metric, twins, facet, report, send, reconnect } =
-    useEngineSocket(ENGINE_URL);
+  const {
+    status,
+    frame,
+    verdict,
+    metric,
+    twins,
+    facet,
+    report,
+    map,
+    send,
+    reconnect,
+  } = useEngineSocket(ENGINE_URL);
   const [mode, setMode] = useState<Mode>("watch");
   const [sensitivity, setSensitivity] = useState(0.5);
   const [zone, setZone] = useState<string>("default");
@@ -212,6 +222,24 @@ export default function App() {
                   </li>
                 ))}
               </ul>
+
+              <span className="eyebrow">memory map</span>
+              <button className="ghost" onClick={() => send({ type: "map" })}>
+                project memory
+              </button>
+              {map && map.points.length > 0 && (
+                <svg className="map" viewBox="-1.1 -1.1 2.2 2.2">
+                  {map.points.map((point) => (
+                    <circle
+                      key={`${point.flagged ? "a" : "n"}-${point.id}`}
+                      cx={point.x}
+                      cy={-point.y}
+                      r={point.flagged ? 0.05 : 0.025}
+                      className={point.flagged ? "node node--flag" : "node"}
+                    />
+                  ))}
+                </svg>
+              )}
             </div>
           )}
 
