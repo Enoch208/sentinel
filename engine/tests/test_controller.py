@@ -5,7 +5,13 @@ from support import FakeEmbedder
 from sentinel_engine.capture import SyntheticScene
 from sentinel_engine.config import Settings
 from sentinel_engine.controller import EngineController, build_controller
-from sentinel_engine.protocol import AckEvent, FacetEvent, ReportEvent, TwinsEvent
+from sentinel_engine.protocol import (
+    AckEvent,
+    FacetEvent,
+    MapEvent,
+    ReportEvent,
+    TwinsEvent,
+)
 
 
 def _controller() -> EngineController:
@@ -94,6 +100,17 @@ def test_zone_tagging_and_facets() -> None:
     bench = next(facet for facet in event.facets if facet.zone == "bench")
     assert bench.memory > 0
     assert bench.flags >= 1
+
+
+def test_memory_map_projects_normal_and_anomalies() -> None:
+    controller = _controller()
+    _run(controller)
+
+    event = controller.handle_command({"type": "map"})
+    assert isinstance(event, MapEvent)
+    assert len(event.points) > 0
+    assert any(point.flagged for point in event.points)
+    assert all(-1.0001 <= point.x <= 1.0001 for point in event.points)
 
 
 def test_watch_report_clusters_anomalies() -> None:

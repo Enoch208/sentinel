@@ -90,6 +90,19 @@ class ReportEvent(BaseModel):
     clusters: list[ClusterModel]
 
 
+class MapPoint(BaseModel):
+    id: int
+    x: float
+    y: float
+    flagged: bool
+    zone: str
+
+
+class MapEvent(BaseModel):
+    type: Literal["map"] = "map"
+    points: list[MapPoint]
+
+
 class AckEvent(BaseModel):
     type: Literal["ack"] = "ack"
     command: str
@@ -136,6 +149,10 @@ class ReportCommand(BaseModel):
     type: Literal["report"]
 
 
+class MapCommand(BaseModel):
+    type: Literal["map"]
+
+
 Command = Annotated[
     SensitivityCommand
     | TeachCommand
@@ -144,7 +161,8 @@ Command = Annotated[
     | ExportCommand
     | ZoneCommand
     | FacetCommand
-    | ReportCommand,
+    | ReportCommand
+    | MapCommand,
     Field(discriminator="type"),
 ]
 

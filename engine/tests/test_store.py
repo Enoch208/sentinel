@@ -68,6 +68,15 @@ def test_reset_empties_collection() -> None:
     assert store.count() == 0
 
 
+def test_sample_returns_vectors_and_zones() -> None:
+    store = _store()
+    store.upsert(1, np.array([1, 0, 0, 0], dtype=np.float32), {"zone": "bench"})
+    store.upsert(2, np.array([0, 1, 0, 0], dtype=np.float32), {"zone": "shelf"})
+
+    samples = {pid: zone for pid, _vec, zone in store.sample(10)}
+    assert samples == {1: "bench", 2: "shelf"}
+
+
 def test_facet_counts_by_payload_key() -> None:
     store = _store()
     vec = np.array([1, 0, 0, 0], dtype=np.float32)

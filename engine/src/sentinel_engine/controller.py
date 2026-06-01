@@ -15,6 +15,7 @@ from sentinel_engine.explore import Explorer
 from sentinel_engine.frameskip import FrameGate
 from sentinel_engine.metrics import footprint_mb
 from sentinel_engine.pipeline import Pipeline
+from sentinel_engine.project import project_2d
 from sentinel_engine.protocol import (
     COMMAND_ADAPTER,
     AckEvent,
@@ -23,6 +24,9 @@ from sentinel_engine.protocol import (
     FacetCommand,
     FacetEvent,
     FrameEvent,
+    MapCommand,
+    MapEvent,
+    MapPoint,
     MetricEvent,
     ReportCommand,
     ReportEvent,
@@ -115,7 +119,7 @@ class EngineController:
 
     def handle_command(
         self, raw: object
-    ) -> AckEvent | TwinsEvent | FacetEvent | ReportEvent:
+    ) -> AckEvent | TwinsEvent | FacetEvent | ReportEvent | MapEvent:
         try:
             command = COMMAND_ADAPTER.validate_python(raw)
         except ValidationError as error:
@@ -140,8 +144,9 @@ class EngineController:
         | ExportCommand
         | ZoneCommand
         | FacetCommand
-        | ReportCommand,
-    ) -> AckEvent | TwinsEvent | FacetEvent | ReportEvent:
+        | ReportCommand
+        | MapCommand,
+    ) -> AckEvent | TwinsEvent | FacetEvent | ReportEvent | MapEvent:
         if isinstance(command, SensitivityCommand):
             self._detector.set_sensitivity(command.value)
             return AckEvent(
@@ -167,6 +172,8 @@ class EngineController:
             return self._facets()
         if isinstance(command, ReportCommand):
             return self._report()
+        if isinstance(command, MapCommand):
+            return self._map()
         if isinstance(command, ResetCommand):
             self._store.reset()
             self._detector.reset()
@@ -192,6 +199,38 @@ class EngineController:
                 for zone in zones
             ]
         )
+
+    def _map(self, limit: int = 300) -> MapEvent:
+        samples = self._store.sample(limit)
+        vectors = [vector for _, vector, _ in samples]
+        vectors.extend(record.vector for record in self._anomalies)
+        if not vectors:
+            return MapEvent(points=[])
+
+        coords = project_2d(vectors)
+        points = [
+            MapPoint(
+                id=point_id,
+                x=float(coords[index][0]),
+                y=float(coords[index][1]),
+                flagged=False,
+                zone=zone,
+            )
+            for index, (point_id, _, zone) in enumerate(samples)
+        ]
+        offset = len(samples)
+        for index, record in enumerate(self._anomalies):
+            coord = coords[offset + index]
+            points.append(
+                MapPoint(
+                    id=record.frame_id,
+                    x=float(coord[0]),
+                    y=float(coord[1]),
+                    flagged=True,
+                    zone=record.zone,
+                )
+            )
+        return MapEvent(points=points)
 
     def _report(self) -> ReportEvent:
         report = cluster_anomalies(self._anomalies)

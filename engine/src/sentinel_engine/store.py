@@ -145,5 +145,21 @@ class PerceptionStore:
         response = self._client.facet(collection_name=self._collection, key=key)
         return {str(hit.value): int(hit.count) for hit in response.hits}
 
+    def sample(self, limit: int) -> list[tuple[int, Vector, str]]:
+        points, _ = self._client.scroll(
+            self._collection,
+            limit=limit,
+            with_vectors=True,
+            with_payload=True,
+        )
+        out: list[tuple[int, Vector, str]] = []
+        for point in points:
+            stored = point.vector
+            raw = stored[self._name] if isinstance(stored, dict) else stored
+            payload = point.payload or {}
+            zone = str(payload.get("zone", "default"))
+            out.append((int(point.id), np.asarray(raw, dtype=np.float32), zone))
+        return out
+
     def count(self) -> int:
         return int(self._client.count(self._collection).count)
