@@ -26,6 +26,12 @@ test:
 	cd engine && uv run ruff check . && uv run mypy src tests && uv run pytest
 	cd desktop && npm run test && npm run build
 
+pack-engine:
+	cd engine && uv run pyinstaller --onedir --name sentinel-serve --noconfirm \
+	  --collect-all fastembed --collect-all onnxruntime --collect-all qdrant_client \
+	  --collect-all cv2 --collect-all tokenizers --collect-all pydantic \
+	  packaging/serve_entry.py
+
 stop:
 	pkill -f sentinel-serve || true
 
