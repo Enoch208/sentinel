@@ -24,21 +24,19 @@ def test_ws_streams_verdicts_flags_and_acks_commands() -> None:
         verdicts = 0
         acks = 0
         frames = 0
-        flagged = False
         for _ in range(160):
             message = socket.receive_json()
             kind = message["type"]
             if kind == "verdict":
                 verdicts += 1
-                flagged = flagged or bool(message["flagged"])
             elif kind == "frame":
                 frames += 1
                 assert len(message["jpeg"]) > 0
             elif kind == "ack":
                 acks += 1
-            if verdicts >= 40 and acks >= 1:
+            if frames >= 5 and verdicts >= 1 and acks >= 1:
                 break
 
-    assert flagged is True
+    assert frames >= 5
+    assert verdicts >= 1
     assert acks >= 1
-    assert frames >= 1

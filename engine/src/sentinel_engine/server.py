@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import queue
 import sys
 import threading
 from collections.abc import Callable, Iterator
@@ -27,6 +28,13 @@ def _offer(
     loop.call_soon_threadsafe(put)
 
 
+def _replace_latest(slot: queue.Queue[Frame], frame: Frame) -> None:
+    with contextlib.suppress(queue.Empty):
+        slot.get_nowait()
+    with contextlib.suppress(queue.Full):
+        slot.put_nowait(frame)
+
+
 def create_app(
     controller_factory: Callable[[], EngineController],
     source_factory: Callable[[], FrameSource],
@@ -41,29 +49,54 @@ def create_app(
         loop = asyncio.get_running_loop()
         outbox: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=256)
         stop = threading.Event()
+        display_done = threading.Event()
+        latest: queue.Queue[Frame] = queue.Queue(maxsize=1)
 
-        def produce() -> None:
+        def capture_loop() -> None:
             frames: Iterator[Frame] = source.frames()
             try:
                 for frame in frames:
                     if stop.is_set():
                         break
                     try:
-                        event = controller.process_frame(frame)
-                        if event is None:
-                            continue
-                        _offer(loop, outbox, controller.frame_event(frame).model_dump())
-                        _offer(loop, outbox, event.model_dump())
-                        _offer(loop, outbox, controller.metrics().model_dump())
+                        _offer(
+                            loop, outbox, controller.frame_event(frame).model_dump()
+                        )
                     except Exception as error:
-                        print(f"frame {frame.id} failed: {error}", file=sys.stderr)
+                        print(
+                            f"frame {frame.id} display failed: {error}",
+                            file=sys.stderr,
+                        )
+                    _replace_latest(latest, frame)
             finally:
                 close = getattr(frames, "close", None)
                 if callable(close):
                     close()
+                display_done.set()
 
-        worker = threading.Thread(target=produce, daemon=True)
-        worker.start()
+        def analysis_loop() -> None:
+            while not stop.is_set():
+                try:
+                    frame = latest.get(timeout=0.1)
+                except queue.Empty:
+                    if display_done.is_set():
+                        break
+                    continue
+                try:
+                    event = controller.process_frame(frame)
+                    if event is None:
+                        continue
+                    _offer(loop, outbox, event.model_dump())
+                    _offer(loop, outbox, controller.metrics().model_dump())
+                except Exception as error:
+                    print(f"frame {frame.id} analysis failed: {error}", file=sys.stderr)
+
+        workers = [
+            threading.Thread(target=capture_loop, daemon=True),
+            threading.Thread(target=analysis_loop, daemon=True),
+        ]
+        for worker in workers:
+            worker.start()
 
         async def send_events() -> None:
             while True:
