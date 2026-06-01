@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSCameraUsageDescription</key>
+  <string>Sentinel watches the camera on-device to flag what doesn't belong. Frames never leave your machine.</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Sentinel can flag out-of-place sounds on-device. Audio never leaves your machine.</string>
+</dict>
+</plist>

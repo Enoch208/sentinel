@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup run demo test stop clean
+.PHONY: help setup run demo test stop clean pack-engine dmg
 
 help:
 	@echo "Sentinel — make targets:"
@@ -8,6 +8,7 @@ help:
 	@echo "  make run     launch the full instrument (engine + desktop app)"
 	@echo "  make demo    headless demos: video anomaly, audio, precision/recall (no camera)"
 	@echo "  make test    run every gate (engine pytest/ruff/mypy + desktop vitest/build)"
+	@echo "  make dmg     build a standalone macOS .app/.dmg (bundles engine + model)"
 	@echo "  make stop    stop the running engine"
 	@echo "  make clean   stop the engine and wipe the local memory database"
 
@@ -31,6 +32,12 @@ pack-engine:
 	  --collect-all fastembed --collect-all onnxruntime --collect-all qdrant_client \
 	  --collect-all cv2 --collect-all tokenizers --collect-all pydantic \
 	  packaging/serve_entry.py
+
+dmg: pack-engine
+	rm -rf desktop/src-tauri/resources/engine/* desktop/src-tauri/resources/model/*
+	cp -R engine/dist/sentinel-serve/. desktop/src-tauri/resources/engine/
+	cp -R engine/.fastembed_cache/. desktop/src-tauri/resources/model/
+	cd desktop && npm run tauri build
 
 stop:
 	pkill -f sentinel-serve || true

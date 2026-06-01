@@ -1,14 +1,50 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+use std::process::{Child, Command};
+use std::sync::Mutex;
+
+use tauri::path::BaseDirectory;
+use tauri::{Manager, RunEvent};
+
+struct Engine(Mutex<Option<Child>>);
+
+fn spawn_engine(app: &tauri::AppHandle) -> Option<Child> {
+    let exe = app
+        .path()
+        .resolve("engine/sentinel-serve", BaseDirectory::Resource)
+        .ok()?;
+    if !exe.exists() {
+        return None;
+    }
+    let model = app.path().resolve("model", BaseDirectory::Resource).ok()?;
+    let data = app.path().app_data_dir().ok()?;
+    let _ = std::fs::create_dir_all(&data);
+    Command::new(exe)
+        .env("SENTINEL_CACHE", model)
+        .env("SENTINEL_DB", data.join("sentinel.db"))
+        .current_dir(&data)
+        .spawn()
+        .ok()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .setup(|app| {
+            let child = spawn_engine(app.handle());
+            app.manage(Engine(Mutex::new(child)));
+            Ok(())
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building the Sentinel app")
+        .run(|app, event| {
+            if let RunEvent::Exit = event {
+                if let Some(engine) = app.try_state::<Engine>() {
+                    if let Ok(mut guard) = engine.0.lock() {
+                        if let Some(mut child) = guard.take() {
+                            let _ = child.kill();
+                        }
+                    }
+                }
+            }
+        });
 }
