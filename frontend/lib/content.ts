@@ -254,8 +254,12 @@ export const CTA = {
   title: ["Point it at a room.", "It already knows what's off."],
   body:
     "Pre-stage a normal scene, let Sentinel learn it, introduce something out of place — and watch it flag the thing you never told it to look for. Fully on-device, built for Qdrant Edge.",
-  primary: { label: "View on GitHub", href: BRAND.github },
-  secondary: { label: "Read the loop", href: "#loop" },
+  primary: {
+    label: "Download for macOS",
+    href: `${BRAND.github}/releases/latest`,
+  },
+  secondary: { label: "View on GitHub", href: BRAND.github },
+  note: "Apple Silicon · fully offline · unsigned — right-click the app and choose Open on first launch.",
 } as const;
 
 export const FOOTER = {

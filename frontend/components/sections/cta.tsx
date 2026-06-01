@@ -37,12 +37,17 @@ export function Cta() {
               </a>
               <a
                 href={CTA.secondary.href}
+                target="_blank"
+                rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-6 py-3 text-[14px] font-light text-white/80 hover:border-white/30 hover:text-white transition-colors"
               >
                 {CTA.secondary.label}
                 <ArrowRight size={16} />
               </a>
             </div>
+            <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.16em] text-white/35">
+              {CTA.note}
+            </p>
           </div>
         </div>
       </div>
