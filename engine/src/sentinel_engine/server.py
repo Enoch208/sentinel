@@ -129,7 +129,7 @@ def run(host: str = "127.0.0.1", port: int = 8765) -> None:
     import uvicorn
 
     from sentinel_engine.capture import LatestFrameCamera
-    from sentinel_engine.config import Settings
+    from sentinel_engine.config import Settings, apply_env_overrides
     from sentinel_engine.controller import build_controller
     from sentinel_engine.embed import FastEmbedImageEmbedder
     from sentinel_engine.session import SessionLog
@@ -141,7 +141,9 @@ def run(host: str = "127.0.0.1", port: int = 8765) -> None:
     for choice in plan.choices:
         print(f"  {choice.setting} = {choice.value}  — {choice.rationale}")
 
-    settings = Settings(skip_hamming=plan.skip_hamming, quantize=plan.quantize)
+    settings = apply_env_overrides(
+        Settings(skip_hamming=plan.skip_hamming, quantize=plan.quantize)
+    )
     embedder = FastEmbedImageEmbedder(settings.model_name, settings.cache_dir)
     session = SessionLog(Path("sessions") / "session.jsonl")
     try:

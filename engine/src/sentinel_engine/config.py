@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 
@@ -19,3 +20,13 @@ class Settings:
     quantize: bool = True
     jpeg_width: int = 480
     jpeg_quality: int = 70
+
+
+def apply_env_overrides(settings: Settings) -> Settings:
+    db = os.environ.get("SENTINEL_DB")
+    if db:
+        settings.db_path = db
+    cache = os.environ.get("SENTINEL_CACHE")
+    if cache:
+        settings.cache_dir = cache
+    return settings
