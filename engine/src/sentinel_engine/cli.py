@@ -36,6 +36,7 @@ def main() -> int:
     parser.add_argument("--db", default=None)
     parser.add_argument("--camera", type=int, default=0)
     parser.add_argument("--frames", type=int, default=40)
+    parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--sensitivity", type=float, default=defaults.sensitivity)
     args = parser.parse_args()
 
@@ -76,6 +77,7 @@ def main() -> int:
 
     print("watching — Ctrl-C to stop. (offline; nothing leaves this machine)\n")
     flags = 0
+    processed = 0
     try:
         for frame in source.frames():
             verdict = pipeline.process(frame)
@@ -83,6 +85,9 @@ def main() -> int:
                 continue
             flags += int(verdict.flagged)
             print(_render(verdict))
+            processed += 1
+            if args.limit and processed >= args.limit:
+                break
     except KeyboardInterrupt:
         pass
 
