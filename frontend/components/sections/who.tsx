@@ -20,7 +20,7 @@ export function Who() {
         ))}
       </div>
 
-      <div className={`mt-6 grid sm:grid-cols-2 lg:grid-cols-4 ${layout.gridGap}`}>
+      <div className={`mt-6 grid sm:grid-cols-2 lg:grid-cols-3 ${layout.gridGap}`}>
         {PILLARS.map((pillar, i) => {
           const Icon = pillar.icon;
           return (

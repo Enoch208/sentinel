@@ -8,7 +8,9 @@ import {
   Gauge,
   Grid,
   Layers,
+  Mic,
   Offline,
+  Sparkles,
   Teach,
   Tune,
   Twins,
@@ -131,31 +133,31 @@ export const ENGINE_ROWS: EngineRow[] = [
   {
     icon: Eye,
     capability: "Nearest-neighbour query",
-    use: "Per-frame anomaly check against the rolling “normal”. Top score below threshold ⇒ flag.",
+    use: "Per-frame anomaly check against the rolling “normal”, and the visual-twins lookup. Top score below threshold ⇒ flag.",
     note: "the hero loop",
   },
   {
-    icon: Alert,
-    capability: "Context search",
-    use: "Richer novelty — “unlike the established zone” — for scenes where a single threshold is too blunt.",
-    note: "Context API",
+    icon: Grid,
+    capability: "Facet",
+    use: "Per-zone review — tag frames by area (bench, shelf, panel) and count anomalies where they happened.",
+    note: "zones",
   },
   {
     icon: Teach,
-    capability: "Discovery + Recommend",
-    use: "Teach-by-example. 👍/👎 become positive/negative targets that steer detection and exploration.",
+    capability: "Recommend",
+    use: "Example-based retrieval behind teach-by-example — 👍/👎 become positive and negative targets.",
     note: "tactile, not typed",
   },
   {
     icon: Twins,
-    capability: "Multivector (MaxSim)",
-    use: "Visual twins over keyframes — everything that looks like this — with a dense-similarity fallback.",
-    note: "degradable",
+    capability: "Scroll → on-device PCA",
+    use: "Projects the whole memory to a 2D map so you can browse clusters, with anomalies highlighted.",
+    note: "explore canvas",
   },
   {
     icon: Layers,
-    capability: "Quantization",
-    use: "Small on-device footprint, measured live in the dossier alongside the memory it saves.",
+    capability: "Scalar quantization",
+    use: "Configured on the collection for a small footprint on the edge; reported honestly (active on Edge, off in local mode).",
     note: "edge-shaped",
   },
 ];
@@ -166,12 +168,22 @@ export const DOSSIER = {
   body:
     "Edge is about resource constraints, so the proof is the product. Every figure is read live from the in-process engine — never hardcoded — and shown with its trade-offs.",
   metrics: [
-    { value: "≥5 fps", label: "Kept frames embedded on a laptop, offline" },
-    { value: "~1s", label: "Out-of-place object to live flag" },
-    { value: "≥4", label: "Qdrant capabilities visibly on the call path" },
+    { value: "1.00", label: "Precision & recall on the staged scene" },
+    { value: "5", label: "Qdrant capabilities on the call path" },
+    { value: "2", label: "Senses — camera and microphone" },
     { value: "0", label: "Bytes that leave the device" },
   ],
 } as const;
+
+export const PROOF_LINES: { text: string; tone: "dim" | "normal" | "flag" | "ok" }[] = [
+  { text: "$ uv run sentinel --synthetic", tone: "dim" },
+  { text: "frame  12   learning normal…", tone: "dim" },
+  { text: "frame  20   normal             score=0.998", tone: "normal" },
+  { text: "frame  24   ⚠ OUT OF PLACE    score=0.852 < 0.946", tone: "flag" },
+  { text: "frame  27   normal             score=0.998", tone: "normal" },
+  { text: "$ uv run sentinel-eval", tone: "dim" },
+  { text: "precision 1.000 · recall 1.000 · f1 1.000", tone: "ok" },
+] as const;
 
 export const WHO_MARKER = { num: "06", label: "Who it's for" } as const;
 
@@ -221,9 +233,19 @@ export const PILLARS = [
     body: "Every flag, teach, and exploration is recorded as an ordered, exportable session you can replay.",
   },
   {
+    icon: Mic,
+    title: "Multimodal on the edge",
+    body: "Out-of-place sounds, not just sights — the same vector loop runs over a microphone to flag abnormal noise.",
+  },
+  {
     icon: Agent,
     title: "A watcher, not a bot",
-    body: "An optional agent clusters recurring anomalies and writes an end-of-walk report. Agentic — never conversational.",
+    body: "An agent clusters recurring anomalies and writes an end-of-walk report. Agentic — never conversational.",
+  },
+  {
+    icon: Sparkles,
+    title: "Tunes itself for the device",
+    body: "On launch it picks quantization, frame-skip, and HNSW for the hardware it's on — with a stated rationale.",
   },
 ] as const;
 

@@ -12,7 +12,9 @@ import {
   Github01Icon,
   GridIcon,
   Layers01Icon,
+  Mic01Icon,
   SlidersHorizontalIcon,
+  SparklesIcon,
   ThumbsUpIcon,
   ViewIcon,
   WifiDisconnected01Icon,
@@ -43,6 +45,8 @@ export const Twins = wrap(Copy01Icon, "Twins");
 export const Gauge = wrap(GaugeIcon, "Gauge");
 export const Layers = wrap(Layers01Icon, "Layers");
 export const Agent = wrap(BotIcon, "Agent");
+export const Mic = wrap(Mic01Icon, "Mic");
+export const Sparkles = wrap(SparklesIcon, "Sparkles");
 export const ArrowDown = wrap(ArrowDown01Icon, "ArrowDown");
 export const ArrowRight = wrap(ArrowRight01Icon, "ArrowRight");
 export const External = wrap(ArrowUpRight01Icon, "External");
