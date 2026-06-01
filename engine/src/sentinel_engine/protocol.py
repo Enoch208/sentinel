@@ -67,6 +67,17 @@ class TwinsEvent(BaseModel):
         return cls(frame_id=frame_id, results=NeighborModel.of_many(neighbors))
 
 
+class ZoneFacet(BaseModel):
+    zone: str
+    memory: int
+    flags: int
+
+
+class FacetEvent(BaseModel):
+    type: Literal["facet"] = "facet"
+    facets: list[ZoneFacet]
+
+
 class AckEvent(BaseModel):
     type: Literal["ack"] = "ack"
     command: str
@@ -100,8 +111,23 @@ class ExportCommand(BaseModel):
     path: str
 
 
+class ZoneCommand(BaseModel):
+    type: Literal["zone"]
+    zone: str
+
+
+class FacetCommand(BaseModel):
+    type: Literal["facet"]
+
+
 Command = Annotated[
-    SensitivityCommand | TeachCommand | TwinsCommand | ResetCommand | ExportCommand,
+    SensitivityCommand
+    | TeachCommand
+    | TwinsCommand
+    | ResetCommand
+    | ExportCommand
+    | ZoneCommand
+    | FacetCommand,
     Field(discriminator="type"),
 ]
 

@@ -5,7 +5,7 @@ from support import FakeEmbedder
 from sentinel_engine.capture import SyntheticScene
 from sentinel_engine.config import Settings
 from sentinel_engine.controller import EngineController, build_controller
-from sentinel_engine.protocol import AckEvent, TwinsEvent
+from sentinel_engine.protocol import AckEvent, FacetEvent, TwinsEvent
 
 
 def _controller() -> EngineController:
@@ -82,3 +82,26 @@ def test_reset_command_clears_memory() -> None:
     _run(controller)
     controller.handle_command({"type": "reset"})
     assert controller.metrics().point_count == 0
+
+
+def test_zone_tagging_and_facets() -> None:
+    controller = _controller()
+    controller.handle_command({"type": "zone", "zone": "bench"})
+    _run(controller)
+
+    event = controller.handle_command({"type": "facet"})
+    assert isinstance(event, FacetEvent)
+    bench = next(facet for facet in event.facets if facet.zone == "bench")
+    assert bench.memory > 0
+    assert bench.flags >= 1
+
+
+def test_reset_clears_zone_flags() -> None:
+    controller = _controller()
+    controller.handle_command({"type": "zone", "zone": "bench"})
+    _run(controller)
+    controller.handle_command({"type": "reset"})
+
+    event = controller.handle_command({"type": "facet"})
+    assert isinstance(event, FacetEvent)
+    assert event.facets == []

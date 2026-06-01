@@ -29,6 +29,7 @@ class Pipeline:
         self._k = top_k
         self._session = session
         self._recent = recent
+        self.zone = "default"
         self.last_embed_ms = 0.0
         self.last_query_ms = 0.0
         self.last_decide_ms = 0.0
@@ -53,7 +54,11 @@ class Pipeline:
         self.last_decide_ms = (time.perf_counter() - queried) * 1000.0
 
         if not decision.flagged:
-            self._store.upsert(frame.id, vector, {"ts": frame.ts, "flagged": False})
+            self._store.upsert(
+                frame.id,
+                vector,
+                {"ts": frame.ts, "flagged": False, "zone": self.zone},
+            )
             if top is not None:
                 self._detector.observe(top)
 

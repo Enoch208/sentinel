@@ -19,6 +19,8 @@ from sentinel_engine.protocol import (
     COMMAND_ADAPTER,
     AckEvent,
     ExportCommand,
+    FacetCommand,
+    FacetEvent,
     FrameEvent,
     MetricEvent,
     ResetCommand,
@@ -27,6 +29,8 @@ from sentinel_engine.protocol import (
     TwinsCommand,
     TwinsEvent,
     VerdictEvent,
+    ZoneCommand,
+    ZoneFacet,
 )
 from sentinel_engine.session import SessionLog
 from sentinel_engine.store import PerceptionStore
@@ -59,6 +63,8 @@ class EngineController:
         self._stamps: deque[float] = deque(maxlen=fps_window)
         self._jpeg_width = jpeg_width
         self._jpeg_quality = jpeg_quality
+        self._zone = "default"
+        self._zone_flags: dict[str, int] = {}
 
     def frame_event(self, frame: Frame) -> FrameEvent:
         jpeg = to_jpeg_base64(frame.image, self._jpeg_width, self._jpeg_quality)
@@ -70,6 +76,8 @@ class EngineController:
             if verdict is None:
                 return None
             self._stamps.append(time.monotonic())
+            if verdict.flagged:
+                self._zone_flags[self._zone] = self._zone_flags.get(self._zone, 0) + 1
             return VerdictEvent.of(verdict)
 
     def metrics(self) -> MetricEvent:
@@ -90,7 +98,7 @@ class EngineController:
                 quantized=self._store.quantization_active,
             )
 
-    def handle_command(self, raw: object) -> AckEvent | TwinsEvent:
+    def handle_command(self, raw: object) -> AckEvent | TwinsEvent | FacetEvent:
         try:
             command = COMMAND_ADAPTER.validate_python(raw)
         except ValidationError as error:
@@ -112,8 +120,10 @@ class EngineController:
         | TeachCommand
         | TwinsCommand
         | ResetCommand
-        | ExportCommand,
-    ) -> AckEvent | TwinsEvent:
+        | ExportCommand
+        | ZoneCommand
+        | FacetCommand,
+    ) -> AckEvent | TwinsEvent | FacetEvent:
         if isinstance(command, SensitivityCommand):
             self._detector.set_sensitivity(command.value)
             return AckEvent(
@@ -131,15 +141,36 @@ class EngineController:
         if isinstance(command, TwinsCommand):
             twins = self._explorer.twins(command.frame_id, command.k)
             return TwinsEvent.of(command.frame_id, twins)
+        if isinstance(command, ZoneCommand):
+            self._zone = command.zone
+            self._pipeline.zone = command.zone
+            return AckEvent(command="zone", ok=True, detail=command.zone)
+        if isinstance(command, FacetCommand):
+            return self._facets()
         if isinstance(command, ResetCommand):
             self._store.reset()
             self._detector.reset()
             self._recent.clear()
+            self._zone_flags.clear()
             return AckEvent(command="reset", ok=True)
         if self._session is None:
             return AckEvent(command="export", ok=False, detail="no session")
         self._session.export(Path(command.path))
         return AckEvent(command="export", ok=True, detail=command.path)
+
+    def _facets(self) -> FacetEvent:
+        memory = self._store.facet("zone")
+        zones = sorted(set(memory) | set(self._zone_flags))
+        return FacetEvent(
+            facets=[
+                ZoneFacet(
+                    zone=zone,
+                    memory=memory.get(zone, 0),
+                    flags=self._zone_flags.get(zone, 0),
+                )
+                for zone in zones
+            ]
+        )
 
 
 def build_controller(

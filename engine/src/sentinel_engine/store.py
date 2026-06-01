@@ -141,5 +141,9 @@ class PerceptionStore:
         self._client.delete_collection(self._collection)
         self._ensure(self._quantize)
 
+    def facet(self, key: str) -> dict[str, int]:
+        response = self._client.facet(collection_name=self._collection, key=key)
+        return {str(hit.value): int(hit.count) for hit in response.hits}
+
     def count(self) -> int:
         return int(self._client.count(self._collection).count)

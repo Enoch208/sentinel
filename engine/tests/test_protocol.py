@@ -42,6 +42,17 @@ def test_verdict_event_maps_from_domain() -> None:
     assert event.neighbors[0].id == 2
 
 
+def test_parses_zone_and_facet_commands() -> None:
+    from sentinel_engine.protocol import FacetCommand, ZoneCommand
+
+    zone = COMMAND_ADAPTER.validate_python({"type": "zone", "zone": "bench"})
+    assert isinstance(zone, ZoneCommand)
+    assert zone.zone == "bench"
+
+    facet = COMMAND_ADAPTER.validate_python({"type": "facet"})
+    assert isinstance(facet, FacetCommand)
+
+
 def test_unknown_command_type_is_rejected() -> None:
     with pytest.raises(ValidationError):
         COMMAND_ADAPTER.validate_python({"type": "nope"})

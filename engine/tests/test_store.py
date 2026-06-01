@@ -68,6 +68,18 @@ def test_reset_empties_collection() -> None:
     assert store.count() == 0
 
 
+def test_facet_counts_by_payload_key() -> None:
+    store = _store()
+    vec = np.array([1, 0, 0, 0], dtype=np.float32)
+    store.upsert(1, vec, {"zone": "bench"})
+    store.upsert(2, vec, {"zone": "bench"})
+    store.upsert(3, vec, {"zone": "shelf"})
+
+    counts = store.facet("zone")
+    assert counts["bench"] == 2
+    assert counts["shelf"] == 1
+
+
 def test_quantization_active_reports_truthfully() -> None:
     plain = PerceptionStore.in_memory("nq", "clip", dim=4, quantize=False)
     assert plain.quantization_active is False
