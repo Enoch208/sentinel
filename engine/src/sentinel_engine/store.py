@@ -9,6 +9,15 @@ from qdrant_client import models as qm
 from sentinel_engine.types import Neighbor, Vector
 
 
+class StorageLockedError(RuntimeError):
+    def __init__(self, path: str) -> None:
+        super().__init__(
+            f"storage at {path} is held by another Sentinel instance "
+            f"(or a stale lock). Stop the other process, remove {path}/.lock, "
+            "or pass a different --db path."
+        )
+
+
 class PerceptionStore:
     def __init__(
         self,
@@ -35,7 +44,13 @@ class PerceptionStore:
         dim: int,
         quantize: bool = True,
     ) -> PerceptionStore:
-        return cls(QdrantClient(path=path), collection, vector_name, dim, quantize)
+        try:
+            client = QdrantClient(path=path)
+        except RuntimeError as error:
+            if "already accessed" in str(error):
+                raise StorageLockedError(path) from error
+            raise
+        return cls(client, collection, vector_name, dim, quantize)
 
     @classmethod
     def in_memory(

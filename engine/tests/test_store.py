@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-import numpy as np
+from pathlib import Path
 
-from sentinel_engine.store import PerceptionStore
+import numpy as np
+import pytest
+
+from sentinel_engine.store import PerceptionStore, StorageLockedError
 
 
 def _store() -> PerceptionStore:
@@ -66,6 +69,14 @@ def test_reset_empties_collection() -> None:
     store.upsert(1, np.array([1, 0, 0, 0], dtype=np.float32), {})
     store.reset()
     assert store.count() == 0
+
+
+def test_opening_a_locked_store_raises_clearly(tmp_path: Path) -> None:
+    path = str(tmp_path / "db")
+    held = PerceptionStore.open(path, "c", "clip", dim=4, quantize=False)
+    assert held is not None
+    with pytest.raises(StorageLockedError):
+        PerceptionStore.open(path, "c", "clip", dim=4, quantize=False)
 
 
 def test_sample_returns_vectors_and_zones() -> None:

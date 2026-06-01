@@ -133,6 +133,7 @@ def run(host: str = "127.0.0.1", port: int = 8765) -> None:
     from sentinel_engine.controller import build_controller
     from sentinel_engine.embed import FastEmbedImageEmbedder
     from sentinel_engine.session import SessionLog
+    from sentinel_engine.store import StorageLockedError
     from sentinel_engine.tuner import detect_profile, tune
 
     plan = tune(detect_profile())
@@ -143,7 +144,11 @@ def run(host: str = "127.0.0.1", port: int = 8765) -> None:
     settings = Settings(skip_hamming=plan.skip_hamming, quantize=plan.quantize)
     embedder = FastEmbedImageEmbedder(settings.model_name, settings.cache_dir)
     session = SessionLog(Path("sessions") / "session.jsonl")
-    controller = build_controller(settings, embedder, session=session)
+    try:
+        controller = build_controller(settings, embedder, session=session)
+    except StorageLockedError as error:
+        print(f"\n{error}")
+        return
     app = create_app(lambda: controller, lambda: LatestFrameCamera())
     uvicorn.run(app, host=host, port=port)
 

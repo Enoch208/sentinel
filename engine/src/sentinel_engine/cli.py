@@ -10,7 +10,7 @@ from sentinel_engine.embed import FastEmbedImageEmbedder
 from sentinel_engine.frameskip import FrameGate
 from sentinel_engine.pipeline import Pipeline
 from sentinel_engine.session import SessionLog
-from sentinel_engine.store import PerceptionStore
+from sentinel_engine.store import PerceptionStore, StorageLockedError
 from sentinel_engine.tuner import detect_profile, tune
 from sentinel_engine.types import Verdict
 
@@ -56,13 +56,17 @@ def main() -> int:
 
     print(f"loading model {settings.model_name} (first run downloads it)…")
     embedder = FastEmbedImageEmbedder(settings.model_name, settings.cache_dir)
-    store = PerceptionStore.open(
-        settings.db_path,
-        settings.collection,
-        settings.vector_name,
-        embedder.dim,
-        settings.quantize,
-    )
+    try:
+        store = PerceptionStore.open(
+            settings.db_path,
+            settings.collection,
+            settings.vector_name,
+            embedder.dim,
+            settings.quantize,
+        )
+    except StorageLockedError as error:
+        print(f"\n{error}")
+        return 1
     detector = AnomalyDetector(
         settings.warmup_frames,
         settings.window,
