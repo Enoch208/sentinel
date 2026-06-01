@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
+import numpy as np
 from qdrant_client import QdrantClient
 from qdrant_client import models as qm
 
@@ -21,6 +22,7 @@ class PerceptionStore:
         self._collection = collection
         self._name = vector_name
         self._dim = dim
+        self._quantize = quantize
         self._ensure(quantize)
 
     @classmethod
@@ -97,6 +99,42 @@ class PerceptionStore:
             with_payload=False,
         )
         return [Neighbor(id=int(p.id), score=float(p.score)) for p in response.points]
+
+    def recommend(
+        self, positive: list[int], negative: list[int], k: int
+    ) -> list[Neighbor]:
+        response = self._client.query_points(
+            self._collection,
+            query=qm.RecommendQuery(
+                recommend=qm.RecommendInput(
+                    positive=cast("list[Any]", positive),
+                    negative=cast("list[Any]", negative),
+                )
+            ),
+            using=self._name,
+            limit=k,
+            with_payload=False,
+        )
+        return [Neighbor(id=int(p.id), score=float(p.score)) for p in response.points]
+
+    def get_vector(self, point_id: int) -> Vector | None:
+        records = self._client.retrieve(
+            self._collection, ids=[point_id], with_vectors=True
+        )
+        if not records:
+            return None
+        stored = records[0].vector
+        raw = stored[self._name] if isinstance(stored, dict) else stored
+        return np.asarray(raw, dtype=np.float32)
+
+    def delete(self, point_id: int) -> None:
+        self._client.delete(
+            self._collection, points_selector=qm.PointIdsList(points=[point_id])
+        )
+
+    def reset(self) -> None:
+        self._client.delete_collection(self._collection)
+        self._ensure(self._quantize)
 
     def count(self) -> int:
         return int(self._client.count(self._collection).count)

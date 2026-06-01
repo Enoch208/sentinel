@@ -29,3 +29,40 @@ def test_query_returns_nearest() -> None:
 
 def test_query_empty_collection() -> None:
     assert _store().query(np.array([1, 0, 0, 0], dtype=np.float32), k=3) == []
+
+
+def test_delete_removes_point() -> None:
+    store = _store()
+    store.upsert(1, np.array([1, 0, 0, 0], dtype=np.float32), {})
+    store.upsert(2, np.array([0, 1, 0, 0], dtype=np.float32), {})
+    store.delete(1)
+    assert store.count() == 1
+
+
+def test_get_vector_roundtrip() -> None:
+    store = _store()
+    vector = np.array([0.0, 0.0, 1.0, 0.0], dtype=np.float32)
+    store.upsert(7, vector, {})
+    fetched = store.get_vector(7)
+    assert fetched is not None
+    assert np.allclose(fetched, vector, atol=1e-5)
+    assert store.get_vector(999) is None
+
+
+def test_recommend_prefers_positive_like() -> None:
+    store = _store()
+    store.upsert(0, np.array([1, 0, 0, 0], dtype=np.float32), {})
+    store.upsert(1, np.array([0, 1, 0, 0], dtype=np.float32), {})
+    store.upsert(2, np.array([0, 0, 1, 0], dtype=np.float32), {})
+    store.upsert(3, np.array([1, 1, 0, 0], dtype=np.float32), {})
+
+    neighbors = store.recommend(positive=[0], negative=[1], k=3)
+    assert neighbors
+    assert neighbors[0].id == 3
+
+
+def test_reset_empties_collection() -> None:
+    store = _store()
+    store.upsert(1, np.array([1, 0, 0, 0], dtype=np.float32), {})
+    store.reset()
+    assert store.count() == 0
