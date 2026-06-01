@@ -91,7 +91,7 @@ def run(host: str = "127.0.0.1", port: int = 8765) -> None:
     from sentinel_engine.session import SessionLog
 
     settings = Settings()
-    embedder = FastEmbedImageEmbedder(settings.model_name)
+    embedder = FastEmbedImageEmbedder(settings.model_name, settings.cache_dir)
     session = SessionLog(Path("sessions") / "session.jsonl")
     controller = build_controller(settings, embedder, session=session)
     app = create_app(lambda: controller, lambda: OpenCVCamera())

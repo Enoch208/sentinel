@@ -8,6 +8,7 @@ class Settings:
     collection: str = "perceptions"
     vector_name: str = "clip"
     model_name: str = "Qdrant/clip-ViT-B-32-vision"
+    cache_dir: str = ".fastembed_cache"
     db_path: str = "./sentinel.db"
     top_k: int = 5
     skip_hamming: int = 8

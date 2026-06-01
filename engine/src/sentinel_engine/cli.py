@@ -45,7 +45,7 @@ def main() -> int:
         settings.db_path = args.db
 
     print(f"loading model {settings.model_name} (first run downloads it)…")
-    embedder = FastEmbedImageEmbedder(settings.model_name)
+    embedder = FastEmbedImageEmbedder(settings.model_name, settings.cache_dir)
     store = PerceptionStore.open(
         settings.db_path,
         settings.collection,

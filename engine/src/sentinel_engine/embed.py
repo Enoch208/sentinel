@@ -17,14 +17,14 @@ class Embedder(Protocol):
 
 
 class FastEmbedImageEmbedder:
-    def __init__(self, model_name: str) -> None:
+    def __init__(self, model_name: str, cache_dir: str | None = None) -> None:
         from fastembed import ImageEmbedding
 
         catalog = {m["model"]: m for m in ImageEmbedding.list_supported_models()}
         if model_name not in catalog:
             raise ValueError(f"unknown image model: {model_name}")
         self._dim = int(catalog[model_name]["dim"])
-        self._model = ImageEmbedding(model_name=model_name)
+        self._model = ImageEmbedding(model_name=model_name, cache_dir=cache_dir)
 
     @property
     def dim(self) -> int:
