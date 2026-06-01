@@ -18,11 +18,14 @@ from sentinel_engine.pipeline import Pipeline
 from sentinel_engine.protocol import (
     COMMAND_ADAPTER,
     AckEvent,
+    ClusterModel,
     ExportCommand,
     FacetCommand,
     FacetEvent,
     FrameEvent,
     MetricEvent,
+    ReportCommand,
+    ReportEvent,
     ResetCommand,
     SensitivityCommand,
     TeachCommand,
@@ -36,6 +39,7 @@ from sentinel_engine.session import SessionLog
 from sentinel_engine.store import PerceptionStore
 from sentinel_engine.teach import RecentFrames, TeachController
 from sentinel_engine.types import Frame
+from sentinel_engine.watcher import AnomalyRecord, cluster_anomalies
 
 
 class EngineController:
@@ -65,6 +69,7 @@ class EngineController:
         self._jpeg_quality = jpeg_quality
         self._zone = "default"
         self._zone_flags: dict[str, int] = {}
+        self._anomalies: list[AnomalyRecord] = []
 
     def frame_event(self, frame: Frame) -> FrameEvent:
         jpeg = to_jpeg_base64(frame.image, self._jpeg_width, self._jpeg_quality)
@@ -78,6 +83,16 @@ class EngineController:
             self._stamps.append(time.monotonic())
             if verdict.flagged:
                 self._zone_flags[self._zone] = self._zone_flags.get(self._zone, 0) + 1
+                vector = self._recent.get(verdict.frame_id)
+                if vector is not None:
+                    self._anomalies.append(
+                        AnomalyRecord(
+                            frame_id=verdict.frame_id,
+                            ts=verdict.ts,
+                            zone=self._zone,
+                            vector=vector,
+                        )
+                    )
             return VerdictEvent.of(verdict)
 
     def metrics(self) -> MetricEvent:
@@ -98,7 +113,9 @@ class EngineController:
                 quantized=self._store.quantization_active,
             )
 
-    def handle_command(self, raw: object) -> AckEvent | TwinsEvent | FacetEvent:
+    def handle_command(
+        self, raw: object
+    ) -> AckEvent | TwinsEvent | FacetEvent | ReportEvent:
         try:
             command = COMMAND_ADAPTER.validate_python(raw)
         except ValidationError as error:
@@ -122,8 +139,9 @@ class EngineController:
         | ResetCommand
         | ExportCommand
         | ZoneCommand
-        | FacetCommand,
-    ) -> AckEvent | TwinsEvent | FacetEvent:
+        | FacetCommand
+        | ReportCommand,
+    ) -> AckEvent | TwinsEvent | FacetEvent | ReportEvent:
         if isinstance(command, SensitivityCommand):
             self._detector.set_sensitivity(command.value)
             return AckEvent(
@@ -147,11 +165,14 @@ class EngineController:
             return AckEvent(command="zone", ok=True, detail=command.zone)
         if isinstance(command, FacetCommand):
             return self._facets()
+        if isinstance(command, ReportCommand):
+            return self._report()
         if isinstance(command, ResetCommand):
             self._store.reset()
             self._detector.reset()
             self._recent.clear()
             self._zone_flags.clear()
+            self._anomalies.clear()
             return AckEvent(command="reset", ok=True)
         if self._session is None:
             return AckEvent(command="export", ok=False, detail="no session")
@@ -170,6 +191,20 @@ class EngineController:
                 )
                 for zone in zones
             ]
+        )
+
+    def _report(self) -> ReportEvent:
+        report = cluster_anomalies(self._anomalies)
+        return ReportEvent(
+            total=report.total,
+            clusters=[
+                ClusterModel(
+                    size=cluster.size,
+                    exemplar_id=cluster.exemplar_id,
+                    zones=list(cluster.zones),
+                )
+                for cluster in report.clusters
+            ],
         )
 
 

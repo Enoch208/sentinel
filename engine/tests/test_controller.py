@@ -5,7 +5,7 @@ from support import FakeEmbedder
 from sentinel_engine.capture import SyntheticScene
 from sentinel_engine.config import Settings
 from sentinel_engine.controller import EngineController, build_controller
-from sentinel_engine.protocol import AckEvent, FacetEvent, TwinsEvent
+from sentinel_engine.protocol import AckEvent, FacetEvent, ReportEvent, TwinsEvent
 
 
 def _controller() -> EngineController:
@@ -94,6 +94,16 @@ def test_zone_tagging_and_facets() -> None:
     bench = next(facet for facet in event.facets if facet.zone == "bench")
     assert bench.memory > 0
     assert bench.flags >= 1
+
+
+def test_watch_report_clusters_anomalies() -> None:
+    controller = _controller()
+    _run(controller)
+
+    event = controller.handle_command({"type": "report"})
+    assert isinstance(event, ReportEvent)
+    assert event.total >= 3
+    assert len(event.clusters) >= 1
 
 
 def test_reset_clears_zone_flags() -> None:

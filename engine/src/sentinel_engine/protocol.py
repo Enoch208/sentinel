@@ -78,6 +78,18 @@ class FacetEvent(BaseModel):
     facets: list[ZoneFacet]
 
 
+class ClusterModel(BaseModel):
+    size: int
+    exemplar_id: int
+    zones: list[str]
+
+
+class ReportEvent(BaseModel):
+    type: Literal["report"] = "report"
+    total: int
+    clusters: list[ClusterModel]
+
+
 class AckEvent(BaseModel):
     type: Literal["ack"] = "ack"
     command: str
@@ -120,6 +132,10 @@ class FacetCommand(BaseModel):
     type: Literal["facet"]
 
 
+class ReportCommand(BaseModel):
+    type: Literal["report"]
+
+
 Command = Annotated[
     SensitivityCommand
     | TeachCommand
@@ -127,7 +143,8 @@ Command = Annotated[
     | ResetCommand
     | ExportCommand
     | ZoneCommand
-    | FacetCommand,
+    | FacetCommand
+    | ReportCommand,
     Field(discriminator="type"),
 ]
 
