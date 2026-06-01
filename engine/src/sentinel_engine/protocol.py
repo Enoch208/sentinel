@@ -51,7 +51,10 @@ class MetricEvent(BaseModel):
     fps: float
     embed_ms: float
     query_ms: float
+    anomaly_ms: float
+    memory_mb: float
     point_count: int
+    quantized: bool
 
 
 class TwinsEvent(BaseModel):

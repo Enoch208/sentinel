@@ -31,6 +31,7 @@ class Pipeline:
         self._recent = recent
         self.last_embed_ms = 0.0
         self.last_query_ms = 0.0
+        self.last_decide_ms = 0.0
 
     def process(self, frame: Frame) -> Verdict | None:
         if not self._gate.should_keep(frame.image):
@@ -49,6 +50,7 @@ class Pipeline:
 
         top = neighbors[0].score if neighbors else None
         decision = self._detector.decide(top, self._store.count())
+        self.last_decide_ms = (time.perf_counter() - queried) * 1000.0
 
         if not decision.flagged:
             self._store.upsert(frame.id, vector, {"ts": frame.ts, "flagged": False})

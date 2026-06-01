@@ -13,6 +13,7 @@ from sentinel_engine.config import Settings
 from sentinel_engine.embed import Embedder
 from sentinel_engine.explore import Explorer
 from sentinel_engine.frameskip import FrameGate
+from sentinel_engine.metrics import footprint_mb
 from sentinel_engine.pipeline import Pipeline
 from sentinel_engine.protocol import (
     COMMAND_ADAPTER,
@@ -73,11 +74,20 @@ class EngineController:
 
     def metrics(self) -> MetricEvent:
         with self._lock:
+            pipeline = self._pipeline
+            anomaly_ms = (
+                pipeline.last_embed_ms
+                + pipeline.last_query_ms
+                + pipeline.last_decide_ms
+            )
             return MetricEvent(
                 fps=self._fps(),
-                embed_ms=self._pipeline.last_embed_ms,
-                query_ms=self._pipeline.last_query_ms,
+                embed_ms=pipeline.last_embed_ms,
+                query_ms=pipeline.last_query_ms,
+                anomaly_ms=anomaly_ms,
+                memory_mb=footprint_mb(),
                 point_count=self._store.count(),
+                quantized=self._store.quantization_active,
             )
 
     def handle_command(self, raw: object) -> AckEvent | TwinsEvent:

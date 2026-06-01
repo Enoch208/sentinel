@@ -31,6 +31,9 @@ def test_process_flags_and_reports_metrics() -> None:
     metric = controller.metrics()
     assert metric.point_count > 0
     assert metric.fps >= 0.0
+    assert metric.memory_mb > 0.0
+    assert metric.anomaly_ms >= 0.0
+    assert isinstance(metric.quantized, bool)
 
 
 def test_frame_event_carries_jpeg() -> None:
