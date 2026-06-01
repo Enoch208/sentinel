@@ -35,6 +35,9 @@ class AnomalyDetector:
     def observe(self, top_score: float) -> None:
         self._scores.append(top_score)
 
+    def reset(self) -> None:
+        self._scores.clear()
+
     def decide(self, top_score: float | None, point_count: int) -> Decision:
         if (
             top_score is None

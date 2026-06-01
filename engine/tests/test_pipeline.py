@@ -1,22 +1,12 @@
 from __future__ import annotations
 
-import cv2
-import numpy as np
+from support import FakeEmbedder
 
 from sentinel_engine.anomaly import AnomalyDetector
 from sentinel_engine.capture import SyntheticScene
 from sentinel_engine.frameskip import FrameGate
 from sentinel_engine.pipeline import Pipeline
 from sentinel_engine.store import PerceptionStore
-from sentinel_engine.types import Image, Vector
-
-
-class FakeEmbedder:
-    dim = 192
-
-    def embed(self, image_bgr: Image) -> Vector:
-        small = cv2.resize(image_bgr, (8, 8), interpolation=cv2.INTER_AREA)
-        return small.astype(np.float32).flatten()
 
 
 def _pipeline() -> tuple[Pipeline, PerceptionStore]:
