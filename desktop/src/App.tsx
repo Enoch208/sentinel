@@ -19,6 +19,7 @@ export default function App() {
   const [sensitivity, setSensitivity] = useState(0.5);
   const [zone, setZone] = useState("default");
   const [tourStep, setTourStep] = useState<number | null>(null);
+  const [sawWarming, setSawWarming] = useState(false);
 
   const state = useMemo(() => stateOf(verdict), [verdict]);
 
@@ -28,9 +29,10 @@ export default function App() {
 
   useEffect(() => {
     if (tourStep === null) return;
-    const next = nextTourStep(tourStep, verdict);
+    if (verdict?.warming && !sawWarming) setSawWarming(true);
+    const next = nextTourStep(tourStep, verdict, sawWarming);
     if (next !== tourStep) setTourStep(next);
-  }, [verdict, tourStep]);
+  }, [verdict, tourStep, sawWarming]);
 
   useEffect(() => {
     if (mode === "explore") send({ type: "facet" });
@@ -88,7 +90,15 @@ export default function App() {
         />
 
         <aside className="panel">
-          <button className="ghost show-how" onClick={() => setTourStep(0)}>
+          <button
+            className="ghost show-how"
+            onClick={() => {
+              send({ type: "reset" });
+              setMode("watch");
+              setSawWarming(false);
+              setTourStep(0);
+            }}
+          >
             show me how
           </button>
 

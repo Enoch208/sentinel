@@ -44,10 +44,15 @@ export function stateOf(verdict: VerdictEvent | null): ViewState {
 export function nextTourStep(
   step: number | null,
   verdict: VerdictEvent | null,
+  sawWarming: boolean,
 ): number | null {
   if (step === null) return null;
   const current = TOUR[step];
-  const settled = current.auto === "settled" && verdict !== null && !verdict.warming;
+  const settled =
+    current.auto === "settled" &&
+    sawWarming &&
+    verdict !== null &&
+    !verdict.warming;
   const flagged = current.auto === "flagged" && verdict?.flagged === true;
   if (!settled && !flagged) return step;
   return step + 1 < TOUR.length ? step + 1 : null;

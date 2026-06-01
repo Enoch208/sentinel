@@ -31,22 +31,26 @@ describe("stateOf", () => {
 
 describe("nextTourStep", () => {
   it("stays null when inactive", () => {
-    expect(nextTourStep(null, verdict())).toBeNull();
+    expect(nextTourStep(null, verdict(), true)).toBeNull();
   });
 
-  it("advances the learn step once warming ends", () => {
-    expect(nextTourStep(0, verdict({ warming: true }))).toBe(0);
-    expect(nextTourStep(0, verdict({ warming: false }))).toBe(1);
+  it("does not advance the learn step from a stale normal verdict", () => {
+    expect(nextTourStep(0, verdict({ warming: false }), false)).toBe(0);
+  });
+
+  it("advances the learn step only after warming, then normal", () => {
+    expect(nextTourStep(0, verdict({ warming: true }), true)).toBe(0);
+    expect(nextTourStep(0, verdict({ warming: false }), true)).toBe(1);
   });
 
   it("advances the flag step only when flagged", () => {
-    expect(nextTourStep(1, verdict({ flagged: false }))).toBe(1);
-    expect(nextTourStep(1, verdict({ flagged: true }))).toBe(2);
+    expect(nextTourStep(1, verdict({ flagged: false }), true)).toBe(1);
+    expect(nextTourStep(1, verdict({ flagged: true }), true)).toBe(2);
   });
 
   it("never auto-advances the manual steps", () => {
-    expect(nextTourStep(2, verdict({ flagged: true }))).toBe(2);
-    expect(nextTourStep(TOUR.length - 1, verdict({ flagged: true }))).toBe(
+    expect(nextTourStep(2, verdict({ flagged: true }), true)).toBe(2);
+    expect(nextTourStep(TOUR.length - 1, verdict({ flagged: true }), true)).toBe(
       TOUR.length - 1,
     );
   });
