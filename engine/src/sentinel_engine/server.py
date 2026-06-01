@@ -133,8 +133,14 @@ def run(host: str = "127.0.0.1", port: int = 8765) -> None:
     from sentinel_engine.controller import build_controller
     from sentinel_engine.embed import FastEmbedImageEmbedder
     from sentinel_engine.session import SessionLog
+    from sentinel_engine.tuner import detect_profile, tune
 
-    settings = Settings()
+    plan = tune(detect_profile())
+    print("auto-tuned for this device (Qdrant Skills-style):")
+    for choice in plan.choices:
+        print(f"  {choice.setting} = {choice.value}  — {choice.rationale}")
+
+    settings = Settings(skip_hamming=plan.skip_hamming, quantize=plan.quantize)
     embedder = FastEmbedImageEmbedder(settings.model_name, settings.cache_dir)
     session = SessionLog(Path("sessions") / "session.jsonl")
     controller = build_controller(settings, embedder, session=session)

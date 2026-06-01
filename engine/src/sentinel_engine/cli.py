@@ -11,6 +11,7 @@ from sentinel_engine.frameskip import FrameGate
 from sentinel_engine.pipeline import Pipeline
 from sentinel_engine.session import SessionLog
 from sentinel_engine.store import PerceptionStore
+from sentinel_engine.tuner import detect_profile, tune
 from sentinel_engine.types import Verdict
 
 
@@ -40,7 +41,16 @@ def main() -> int:
     parser.add_argument("--sensitivity", type=float, default=defaults.sensitivity)
     args = parser.parse_args()
 
-    settings = Settings(sensitivity=args.sensitivity)
+    plan = tune(detect_profile())
+    print("auto-tuned for this device (Qdrant Skills-style):")
+    for choice in plan.choices:
+        print(f"  {choice.setting} = {choice.value}  — {choice.rationale}")
+
+    settings = Settings(
+        sensitivity=args.sensitivity,
+        skip_hamming=plan.skip_hamming,
+        quantize=plan.quantize,
+    )
     if args.db:
         settings.db_path = args.db
 
