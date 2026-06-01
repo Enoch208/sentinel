@@ -1,0 +1,13 @@
+
+CLAUDE.md
+**/CLAUDE.md
+sentinel_prd.md
+*_prd.md
+.claude/
+docs/superpowers/
+
+.DS_Store
+*.pem
+Thumbs.db
+
+
