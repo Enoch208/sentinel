@@ -1,13 +1,18 @@
 <div align="center">
 
-# Sentinel
+<img src="docs/banner.svg" alt="Sentinel — notice what doesn't belong" width="100%" />
 
-### An on-device, fully-offline perceptual instrument that flags **what doesn't belong** — in real time, with embedded Qdrant.
+&nbsp;
 
-No query box. No chatbot. No cloud. Point it at a space, it learns what's *normal*, and it speaks only when something breaks the pattern.
+[![CI](https://github.com/Enoch208/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/Enoch208/sentinel/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Offline](https://img.shields.io/badge/runs-100%25%20offline-10b981)
+![Vector engine](https://img.shields.io/badge/vector%20engine-Qdrant%20Edge-DC244C)
+![Stack](https://img.shields.io/badge/Python%203.12%20·%20Tauri%202-1f1f23)
 
-![ci](https://github.com/Enoch208/sentinel/actions/workflows/ci.yml/badge.svg)
-&nbsp;·&nbsp; Built for the Qdrant **"Think Outside the Bot"** Hackathon &nbsp;·&nbsp; Embedded Qdrant, architected for **Qdrant Edge**
+### On-device, fully-offline anomaly detection — it learns what's *normal* and flags **what doesn't belong**.
+
+No query box. No chatbot. No cloud. Built for the Qdrant **"Think Outside the Bot"** Hackathon · embedded Qdrant, architected for **Qdrant Edge**.
 
 </div>
 
