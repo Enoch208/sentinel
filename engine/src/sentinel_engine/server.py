@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import sys
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from sentinel_engine.capture import FrameSource
 from sentinel_engine.controller import EngineController
+from sentinel_engine.types import Frame
 
 
 def _offer(
@@ -41,15 +43,24 @@ def create_app(
         stop = threading.Event()
 
         def produce() -> None:
-            for frame in source.frames():
-                if stop.is_set():
-                    return
-                event = controller.process_frame(frame)
-                if event is None:
-                    continue
-                _offer(loop, outbox, controller.frame_event(frame).model_dump())
-                _offer(loop, outbox, event.model_dump())
-                _offer(loop, outbox, controller.metrics().model_dump())
+            frames: Iterator[Frame] = source.frames()
+            try:
+                for frame in frames:
+                    if stop.is_set():
+                        break
+                    try:
+                        event = controller.process_frame(frame)
+                        if event is None:
+                            continue
+                        _offer(loop, outbox, controller.frame_event(frame).model_dump())
+                        _offer(loop, outbox, event.model_dump())
+                        _offer(loop, outbox, controller.metrics().model_dump())
+                    except Exception as error:
+                        print(f"frame {frame.id} failed: {error}", file=sys.stderr)
+            finally:
+                close = getattr(frames, "close", None)
+                if callable(close):
+                    close()
 
         worker = threading.Thread(target=produce, daemon=True)
         worker.start()
