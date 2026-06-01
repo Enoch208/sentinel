@@ -9,7 +9,7 @@ const ENGINE_URL = "ws://127.0.0.1:8765/ws";
 const ZONES = ["default", "bench", "shelf", "panel"] as const;
 
 export default function App() {
-  const { status, frame, verdict, metric, twins, facet, send, reconnect } =
+  const { status, frame, verdict, metric, twins, facet, report, send, reconnect } =
     useEngineSocket(ENGINE_URL);
   const [mode, setMode] = useState<Mode>("watch");
   const [sensitivity, setSensitivity] = useState(0.5);
@@ -196,6 +196,19 @@ export default function App() {
                     <span className="mono">
                       {entry.memory} pts · {entry.flags} ⚠
                     </span>
+                  </li>
+                ))}
+              </ul>
+
+              <span className="eyebrow">watcher</span>
+              <button className="ghost" onClick={() => send({ type: "report" })}>
+                end-of-walk report
+              </button>
+              <ul className="twins">
+                {report?.clusters.map((cluster) => (
+                  <li key={cluster.exemplar_id}>
+                    <span>cluster · {cluster.zones.join(", ") || "default"}</span>
+                    <span className="mono">×{cluster.size}</span>
                   </li>
                 ))}
               </ul>

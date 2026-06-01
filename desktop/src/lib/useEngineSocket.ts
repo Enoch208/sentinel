@@ -6,6 +6,7 @@ import type {
   FacetEvent,
   FrameEvent,
   MetricEvent,
+  ReportEvent,
   TwinsEvent,
   VerdictEvent,
 } from "./types";
@@ -19,6 +20,7 @@ export type EngineState = {
   metric: MetricEvent | null;
   twins: TwinsEvent | null;
   facet: FacetEvent | null;
+  report: ReportEvent | null;
   send: (command: Command) => void;
   reconnect: () => void;
 };
@@ -30,6 +32,7 @@ export function useEngineSocket(url: string): EngineState {
   const [metric, setMetric] = useState<MetricEvent | null>(null);
   const [twins, setTwins] = useState<TwinsEvent | null>(null);
   const [facet, setFacet] = useState<FacetEvent | null>(null);
+  const [report, setReport] = useState<ReportEvent | null>(null);
   const [nonce, setNonce] = useState(0);
   const socketRef = useRef<WebSocket | null>(null);
 
@@ -59,6 +62,9 @@ export function useEngineSocket(url: string): EngineState {
         case "facet":
           setFacet(event);
           break;
+        case "report":
+          setReport(event);
+          break;
         case "ack":
           break;
       }
@@ -76,5 +82,15 @@ export function useEngineSocket(url: string): EngineState {
 
   const reconnect = useCallback(() => setNonce((value) => value + 1), []);
 
-  return { status, frame, verdict, metric, twins, facet, send, reconnect };
+  return {
+    status,
+    frame,
+    verdict,
+    metric,
+    twins,
+    facet,
+    report,
+    send,
+    reconnect,
+  };
 }

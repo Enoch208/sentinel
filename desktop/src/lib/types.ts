@@ -42,6 +42,14 @@ export type FacetEvent = {
   facets: ZoneFacet[];
 };
 
+export type Cluster = { size: number; exemplar_id: number; zones: string[] };
+
+export type ReportEvent = {
+  type: "report";
+  total: number;
+  clusters: Cluster[];
+};
+
 export type AckEvent = {
   type: "ack";
   command: string;
@@ -55,6 +63,7 @@ export type EngineEvent =
   | MetricEvent
   | TwinsEvent
   | FacetEvent
+  | ReportEvent
   | AckEvent;
 
 export type Command =
@@ -64,4 +73,5 @@ export type Command =
   | { type: "reset" }
   | { type: "export"; path: string }
   | { type: "zone"; zone: string }
-  | { type: "facet" };
+  | { type: "facet" }
+  | { type: "report" };
