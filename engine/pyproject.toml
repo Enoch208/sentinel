@@ -1,0 +1,51 @@
+[project]
+name = "sentinel-engine"
+version = "0.1.0"
+description = "On-device perceptual instrument: capture, embed, and flag what doesn't belong with embedded Qdrant."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "qdrant-client>=1.12",
+    "fastembed>=0.4",
+    "opencv-python>=4.10",
+    "pillow>=11",
+    "imagehash>=4.3",
+    "numpy>=2",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "websockets>=13",
+    "pydantic>=2.9",
+]
+
+[project.scripts]
+sentinel = "sentinel_engine.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.7", "mypy>=1.13"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sentinel_engine"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["cv2.*", "imagehash.*", "fastembed.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
