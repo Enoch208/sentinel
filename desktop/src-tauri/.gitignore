@@ -10,3 +10,6 @@
 /resources/model/*
 !/resources/engine/.gitkeep
 !/resources/model/.gitkeep
+/gen
+/icons/android
+/icons/ios
