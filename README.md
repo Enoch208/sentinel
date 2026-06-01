@@ -44,12 +44,19 @@ Every interaction is a gesture — **Watch / Teach / Explore** — never a typed
 
 ## How it works
 
-```
-camera ─▶ frame-skip (perceptual hash) ─▶ embed on-device (CLIP) ─▶ embedded Qdrant
-                                                                          │
-   new frame ─▶ nearest-neighbour query ─▶ below the learned threshold? ─▶ ⚠ flag
-                                                                          │
-        teach 👍/👎 ─▶ reshape "normal"        explore ─▶ twins · zones · 2D map · agent report
+```mermaid
+flowchart LR
+  CAM[Camera or Mic] --> SKIP[Frame-skip<br/>perceptual hash]
+  SKIP --> EMB[On-device embed<br/>CLIP / spectral]
+  EMB --> QD[(Embedded Qdrant<br/>perceptions)]
+  EMB --> NN{Nearest neighbour<br/>below threshold}
+  QD --> NN
+  NN -- yes --> FLAG[Out of place]
+  NN -- no --> NORM[Normal · learn it]
+  NORM --> QD
+  FLAG --> TEACH[Teach up / down]
+  TEACH --> QD
+  FLAG --> XP[Explore<br/>twins · zones · 2D map · agent report]
 ```
 
 The loop is **modality-agnostic at the vector level** — the camera and the microphone share the same store, the same anomaly detector, and the same teach signal. Add a sense, and detection comes for free.
@@ -109,6 +116,23 @@ make test     # every gate: engine (pytest/ruff/mypy) + desktop (vitest/build)
 `make run` starts the engine, waits until it binds `ws://127.0.0.1:8765`, opens the desktop app, and shuts the engine down cleanly on exit. The desktop owns nothing but the view; the Python engine owns the camera and the memory.
 
 ## Architecture
+
+```mermaid
+flowchart TB
+  subgraph DEV [On-device · fully offline]
+    subgraph ENG [Python engine]
+      CAP[OpenCV capture] --> PIPE[Pipeline<br/>skip · embed · detect]
+      PIPE --> QD[(Embedded Qdrant)]
+      PIPE --> AG[Watcher agent<br/>+ auto-tuner]
+    end
+    subgraph SH [Tauri desktop shell]
+      UI[Live view · dossier · explore]
+    end
+    PIPE -- WebSocket · frame / verdict / metric --> UI
+    UI -- commands · teach / zone / map --> PIPE
+  end
+  EDGE[Qdrant Edge · EdgeShard] -. same Query API .-> QD
+```
 
 | Path | What |
 |---|---|
