@@ -11,6 +11,10 @@ class NeighborModel(BaseModel):
     id: int
     score: float
 
+    @classmethod
+    def of_many(cls, neighbors: list[Neighbor]) -> list[NeighborModel]:
+        return [cls(id=n.id, score=n.score) for n in neighbors]
+
 
 class VerdictEvent(BaseModel):
     type: Literal["verdict"] = "verdict"
@@ -31,9 +35,7 @@ class VerdictEvent(BaseModel):
             threshold=verdict.threshold,
             flagged=verdict.flagged,
             warming=verdict.warming,
-            neighbors=[
-                NeighborModel(id=n.id, score=n.score) for n in verdict.neighbors
-            ],
+            neighbors=NeighborModel.of_many(verdict.neighbors),
         )
 
 
@@ -52,10 +54,7 @@ class TwinsEvent(BaseModel):
 
     @classmethod
     def of(cls, frame_id: int, neighbors: list[Neighbor]) -> TwinsEvent:
-        return cls(
-            frame_id=frame_id,
-            results=[NeighborModel(id=n.id, score=n.score) for n in neighbors],
-        )
+        return cls(frame_id=frame_id, results=NeighborModel.of_many(neighbors))
 
 
 class AckEvent(BaseModel):

@@ -66,3 +66,11 @@ def test_reset_empties_collection() -> None:
     store.upsert(1, np.array([1, 0, 0, 0], dtype=np.float32), {})
     store.reset()
     assert store.count() == 0
+
+
+def test_quantization_active_reports_truthfully() -> None:
+    plain = PerceptionStore.in_memory("nq", "clip", dim=4, quantize=False)
+    assert plain.quantization_active is False
+
+    requested = PerceptionStore.in_memory("q", "clip", dim=4, quantize=True)
+    assert isinstance(requested.quantization_active, bool)

@@ -23,6 +23,7 @@ class PerceptionStore:
         self._name = vector_name
         self._dim = dim
         self._quantize = quantize
+        self.quantization_active: bool = False
         self._ensure(quantize)
 
     @classmethod
@@ -55,28 +56,32 @@ class PerceptionStore:
         }
 
     def _ensure(self, quantize: bool) -> None:
-        if self._client.collection_exists(self._collection):
-            return
-        quantization = (
-            qm.ScalarQuantization(
-                scalar=qm.ScalarQuantizationConfig(
-                    type=qm.ScalarType.INT8, always_ram=True
+        if not self._client.collection_exists(self._collection):
+            quantization = (
+                qm.ScalarQuantization(
+                    scalar=qm.ScalarQuantizationConfig(
+                        type=qm.ScalarType.INT8, always_ram=True
+                    )
                 )
+                if quantize
+                else None
             )
-            if quantize
-            else None
-        )
-        try:
-            self._client.create_collection(
-                self._collection,
-                vectors_config=self._vectors_config(),
-                quantization_config=quantization,
-            )
-        except (TypeError, ValueError):
-            self._client.create_collection(
-                self._collection,
-                vectors_config=self._vectors_config(),
-            )
+            try:
+                self._client.create_collection(
+                    self._collection,
+                    vectors_config=self._vectors_config(),
+                    quantization_config=quantization,
+                )
+            except (TypeError, ValueError):
+                self._client.create_collection(
+                    self._collection,
+                    vectors_config=self._vectors_config(),
+                )
+        self.quantization_active = self._quantization_in_effect()
+
+    def _quantization_in_effect(self) -> bool:
+        info = self._client.get_collection(self._collection)
+        return getattr(info.config, "quantization_config", None) is not None
 
     def upsert(self, point_id: int, vector: Vector, payload: dict[str, Any]) -> None:
         self._client.upsert(
