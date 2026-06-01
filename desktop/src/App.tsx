@@ -1,51 +1,178 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { useMemo, useState } from "react";
+
+import type { VerdictEvent } from "./lib/types";
+import { useEngineSocket } from "./lib/useEngineSocket";
 import "./App.css";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+const ENGINE_URL = "ws://127.0.0.1:8765/ws";
+const MODES = ["watch", "teach", "explore"] as const;
+type Mode = (typeof MODES)[number];
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+type ViewState = {
+  key: "idle" | "warming" | "normal" | "flagged";
+  label: string;
+};
+
+function stateOf(verdict: VerdictEvent | null): ViewState {
+  if (!verdict) return { key: "idle", label: "waiting for the engine" };
+  if (verdict.warming) return { key: "warming", label: "learning normal…" };
+  if (verdict.flagged) return { key: "flagged", label: "⚠ out of place" };
+  return { key: "normal", label: "normal" };
+}
+
+export default function App() {
+  const { status, frame, verdict, metric, twins, send } =
+    useEngineSocket(ENGINE_URL);
+  const [mode, setMode] = useState<Mode>("watch");
+  const [sensitivity, setSensitivity] = useState(0.5);
+
+  const state = useMemo(() => stateOf(verdict), [verdict]);
+  const score = verdict?.score ?? null;
+
+  const onSensitivity = (value: number) => {
+    setSensitivity(value);
+    send({ type: "sensitivity", value });
+  };
+
+  const teach = (label: "expected" | "anomaly") => {
+    if (verdict) send({ type: "teach", frame_id: verdict.frame_id, label });
+  };
+
+  const showTwins = () => {
+    if (verdict) send({ type: "twins", frame_id: verdict.frame_id, k: 4 });
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="app">
+      <header className="bar">
+        <div className="brand">
+          <span className="dot" />
+          <span className="name">Sentinel</span>
+        </div>
+        <span className={`status status--${status}`}>{status}</span>
+      </header>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+      <main className="stage">
+        <section className={`viewport viewport--${state.key}`}>
+          {frame ? (
+            <img
+              className="feed"
+              src={`data:image/jpeg;base64,${frame.jpeg}`}
+              alt="live perception"
+            />
+          ) : (
+            <div className="empty">
+              Show me your space — I’ll learn what’s normal and flag what isn’t.
+            </div>
+          )}
+          <div className="badge">{state.label}</div>
+        </section>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+        <aside className="panel">
+          <div className="modes">
+            {MODES.map((option) => (
+              <button
+                key={option}
+                className={`chip ${mode === option ? "chip--on" : ""}`}
+                onClick={() => setMode(option)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+
+          <div className="control">
+            <label className="eyebrow" htmlFor="sensitivity">
+              sensitivity
+            </label>
+            <input
+              id="sensitivity"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={sensitivity}
+              onChange={(event) => onSensitivity(Number(event.target.value))}
+            />
+          </div>
+
+          {mode === "teach" && (
+            <div className="teach">
+              <button
+                className="teach-btn teach-btn--up"
+                disabled={!verdict}
+                onClick={() => teach("expected")}
+              >
+                👍 expected
+              </button>
+              <button
+                className="teach-btn teach-btn--down"
+                disabled={!verdict}
+                onClick={() => teach("anomaly")}
+              >
+                👎 anomaly
+              </button>
+            </div>
+          )}
+
+          {mode === "explore" && (
+            <div className="explore">
+              <button className="ghost" disabled={!verdict} onClick={showTwins}>
+                show visual twins
+              </button>
+              <ul className="twins">
+                {twins?.results.map((twin) => (
+                  <li key={twin.id}>
+                    <span>frame {twin.id}</span>
+                    <span className="mono">{twin.score.toFixed(3)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="dossier">
+            <span className="eyebrow">on-device dossier</span>
+            <Metric
+              label="score"
+              value={score === null ? "—" : score.toFixed(3)}
+            />
+            <Metric
+              label="threshold"
+              value={verdict ? verdict.threshold.toFixed(3) : "—"}
+            />
+            <Metric label="fps" value={metric ? metric.fps.toFixed(1) : "—"} />
+            <Metric
+              label="embed"
+              value={metric ? `${metric.embed_ms.toFixed(0)} ms` : "—"}
+            />
+            <Metric
+              label="query"
+              value={metric ? `${metric.query_ms.toFixed(1)} ms` : "—"}
+            />
+            <Metric
+              label="memory"
+              value={metric ? `${metric.point_count} pts` : "—"}
+            />
+          </div>
+
+          <button
+            className="ghost reset"
+            onClick={() => send({ type: "reset" })}
+          >
+            reset memory
+          </button>
+        </aside>
+      </main>
+    </div>
   );
 }
 
-export default App;
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="metric">
+      <span className="metric-label">{label}</span>
+      <span className="metric-value">{value}</span>
+    </div>
+  );
+}

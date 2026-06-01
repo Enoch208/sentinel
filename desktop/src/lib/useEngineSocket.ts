@@ -1,0 +1,70 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import type {
+  Command,
+  EngineEvent,
+  FrameEvent,
+  MetricEvent,
+  TwinsEvent,
+  VerdictEvent,
+} from "./types";
+
+export type ConnectionStatus = "connecting" | "open" | "closed";
+
+export type EngineState = {
+  status: ConnectionStatus;
+  frame: FrameEvent | null;
+  verdict: VerdictEvent | null;
+  metric: MetricEvent | null;
+  twins: TwinsEvent | null;
+  send: (command: Command) => void;
+};
+
+export function useEngineSocket(url: string): EngineState {
+  const [status, setStatus] = useState<ConnectionStatus>("connecting");
+  const [frame, setFrame] = useState<FrameEvent | null>(null);
+  const [verdict, setVerdict] = useState<VerdictEvent | null>(null);
+  const [metric, setMetric] = useState<MetricEvent | null>(null);
+  const [twins, setTwins] = useState<TwinsEvent | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    const socket = new WebSocket(url);
+    socketRef.current = socket;
+    setStatus("connecting");
+
+    socket.onopen = () => setStatus("open");
+    socket.onclose = () => setStatus("closed");
+    socket.onerror = () => setStatus("closed");
+    socket.onmessage = (message: MessageEvent<string>) => {
+      const event = JSON.parse(message.data) as EngineEvent;
+      switch (event.type) {
+        case "frame":
+          setFrame(event);
+          break;
+        case "verdict":
+          setVerdict(event);
+          break;
+        case "metric":
+          setMetric(event);
+          break;
+        case "twins":
+          setTwins(event);
+          break;
+        case "ack":
+          break;
+      }
+    };
+
+    return () => socket.close();
+  }, [url]);
+
+  const send = useCallback((command: Command) => {
+    const socket = socketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(command));
+    }
+  }, []);
+
+  return { status, frame, verdict, metric, twins, send };
+}

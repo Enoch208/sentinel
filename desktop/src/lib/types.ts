@@ -1,0 +1,54 @@
+export type NeighborDTO = { id: number; score: number };
+
+export type FrameEvent = {
+  type: "frame";
+  frame_id: number;
+  ts: number;
+  jpeg: string;
+};
+
+export type VerdictEvent = {
+  type: "verdict";
+  frame_id: number;
+  ts: number;
+  score: number | null;
+  threshold: number;
+  flagged: boolean;
+  warming: boolean;
+  neighbors: NeighborDTO[];
+};
+
+export type MetricEvent = {
+  type: "metric";
+  fps: number;
+  embed_ms: number;
+  query_ms: number;
+  point_count: number;
+};
+
+export type TwinsEvent = {
+  type: "twins";
+  frame_id: number;
+  results: NeighborDTO[];
+};
+
+export type AckEvent = {
+  type: "ack";
+  command: string;
+  ok: boolean;
+  detail: string;
+};
+
+export type EngineEvent =
+  | FrameEvent
+  | VerdictEvent
+  | MetricEvent
+  | TwinsEvent
+  | AckEvent;
+
+export type Command =
+  | { type: "sensitivity"; value: number }
+  | { type: "teach"; frame_id: number; label: "expected" | "anomaly" }
+  | { type: "twins"; frame_id: number; k: number }
+  | { type: "reset" }
+  | { type: "export"; path: string };
