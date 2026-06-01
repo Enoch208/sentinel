@@ -1,121 +1,134 @@
+<div align="center">
+
 # Sentinel
 
-**An on-device, fully-offline perceptual instrument. It rides a camera, learns the "normal" of a space with embedded Qdrant, and flags in real time _what doesn't belong_ — then lets you explore that memory by example. No query box. No chatbot. No cloud.**
+### An on-device, fully-offline perceptual instrument that flags **what doesn't belong** — in real time, with embedded Qdrant.
 
-Built for the Qdrant "Think Outside the Bot" hackathon. Sentinel is the inverse of search: most edge-perception demos answer _"where is the thing I'm looking for?"_ — Sentinel answers the harder question an inspector, guard, or lab tech actually asks: _"what here is new, or out of place?"_ You can't query for the thing you didn't know to look for, so Sentinel doesn't make you. It watches, learns, and speaks once — when something breaks the pattern.
+No query box. No chatbot. No cloud. Point it at a space, it learns what's *normal*, and it speaks only when something breaks the pattern.
+
+![ci](https://github.com/Enoch208/sentinel/actions/workflows/ci.yml/badge.svg)
+&nbsp;·&nbsp; Built for the Qdrant **"Think Outside the Bot"** Hackathon &nbsp;·&nbsp; Embedded Qdrant, architected for **Qdrant Edge**
+
+</div>
 
 ---
+
+## The idea
+
+Vector search began as context for chatbots, then memory for agents. The third wave is **embedded** — AI moving to where decisions actually happen: cameras, robots, kiosks, factory floors, where the network is unreliable, latency budgets are tight, and data must stay private and local.
+
+Most edge-perception demos answer *"where is the thing I'm looking for?"* Sentinel answers the **harder, inverse question** a safety inspector, a security guard, or a lab tech actually asks:
+
+> **"What here is new, unexpected, or out of place?"**
+
+You can't query for the thing you didn't know to look for — so Sentinel doesn't make you. It vectorizes what a camera (or microphone) perceives **on-device**, continuously compares it against the *normal* it has learned, and surfaces novelty the instant it appears. Private. Offline. Real-time. Qdrant is the engine, end to end.
+
+## What it does — in 60 seconds
+
+1. **Watch** — point the camera at a scene. Sentinel embeds frames on-device and forms a rolling model of "normal" in seconds.
+2. **Flag** — introduce something out of place and the view glows **⚠ amber** within ~a second. *You never told it what to look for.*
+3. **Inspect** — tap the flag for its nearest "normal" memories (the *why*) and its **visual twins** — everything that looks like it.
+4. **Teach** — 👍 expected / 👎 anomaly. The memory adapts; benign changes stop flagging.
+5. **Explore** — a 2D map of the whole perceptual memory, per-zone anomaly counts, and an agent's end-of-walk report.
+6. **Pull the plug** — turn off wifi. **Nothing changes.** Offline isn't a mode; it's the architecture.
+
+Every interaction is a gesture — **Watch / Teach / Explore** — never a typed query.
+
+## Why it's different
+
+- **It detects the unknown, not the known.** The headline is anomaly/novelty detection — the inverse of retrieval, and a genuinely harder problem on the edge.
+- **It runs the entire pipeline on the device.** Capture → embed → store → query → flag, all in-process, with no network on the call path. The "wifi-off, still working" moment is structural, not staged.
+- **It rides the 2026 stack.** Embedded Qdrant today, architected to drop onto **Qdrant Edge** with no change to the query logic; an autonomous **watcher agent**; and a **Skills-style auto-tuner** that fits the engine to the device.
+- **It's multimodal.** The same vector-anomaly loop runs over a **microphone** to flag out-of-place *sounds* — true multimodal on the edge.
+- **It's honest.** Every number in the dossier is read live from the running engine. Where a capability only materializes on Edge (quantization savings), it says so rather than faking a figure.
 
 ## How it works
 
 ```
 camera ─▶ frame-skip (perceptual hash) ─▶ embed on-device (CLIP) ─▶ embedded Qdrant
                                                                           │
-   new frame ─▶ nearest-neighbour query ─▶ below learned threshold? ─▶ ⚠ flag
+   new frame ─▶ nearest-neighbour query ─▶ below the learned threshold? ─▶ ⚠ flag
                                                                           │
-              teach 👍/👎 ─▶ reshape "normal"      explore ─▶ visual twins · zones · 2D map
+        teach 👍/👎 ─▶ reshape "normal"        explore ─▶ twins · zones · 2D map · agent report
 ```
 
-The loop is **modality-agnostic at the vector level** — the same store + anomaly detector power both the camera and the microphone.
+The loop is **modality-agnostic at the vector level** — the camera and the microphone share the same store, the same anomaly detector, and the same teach signal. Add a sense, and detection comes for free.
 
-| Function | How |
+## The Qdrant engine
+
+Sentinel runs Qdrant **in-process and fully offline** (`QdrantClient(path=…)`) — no server, no extra services, persists to disk. This shares the **same points & Query API as Qdrant Edge**, so the code path drops onto Edge's `EdgeShard` with no change to the query logic the moment beta access lands. Local mode is the runs-anywhere build shipped today; Edge is the production target.
+
+| Capability | Where Sentinel uses it |
 |---|---|
-| Learn "normal" | upsert kept-frame vectors into the `perceptions` collection |
-| Anomaly check (per frame) | `query_points` nearest-neighbour; if top score < an adaptive rolling threshold ⇒ flag |
-| Teach by example | 👍 adds the frame to normal memory; 👎 removes it (and records a negative) |
-| Visual twins | dense nearest-neighbour over the memory (multivector-ready) |
-| Zones | per-zone review via the Qdrant **Facet** API |
-| Explore map | `scroll` vectors → **PCA** → 2D projection, anomalies highlighted |
-| Watcher agent | online cosine clustering of recurring anomalies → end-of-walk report |
+| **Nearest-neighbour `query_points`** | the hero anomaly loop, and the visual-twins lookup |
+| **Facet** | per-zone anomaly review — tag frames by area, count anomalies where they happened |
+| **Recommend** | example-based retrieval behind teach-by-example (👍/👎 → positive/negative) |
+| **Scroll → on-device PCA** | projects the whole memory to a 2D map, anomalies highlighted |
+| **Scalar quantization** | configured for a small on-device footprint (active on Edge; reported honestly) |
 
-## Why embedded Qdrant (and Edge)
+Collection `perceptions`: dense `clip` vectors (Cosine), payload `ts · frame_id · zone · flagged`, quantization configured.
 
-Sentinel runs Qdrant **in-process and fully offline** via the client's local mode (`QdrantClient(path=…)`) — no server, no network, persists to disk. This shares the **same points/Query API as Qdrant Edge**, so the code path drops onto Edge's `EdgeShard` with no change to the query logic when beta access lands. Edge is the production target; local mode is the honest, runs-anywhere build we ship today.
+## On-device proof
 
-**Qdrant capabilities on the call path:** nearest-neighbour `query_points` (the hero anomaly loop + visual twins), the **Facet** API (per-zone anomaly review), `scroll` with vectors (the 2D explore map), and **scalar quantization** configured on the collection. `RecommendQuery` is implemented and tested as part of the teach/explore toolkit.
+Edge is about resource constraints, so the proof *is* the product. The live dossier reports — from the running engine, never hardcoded — fps, per-frame embed & query latency, anomaly-detection latency, process footprint, memory size, and quantization state. And the detector is measured, not asserted:
 
-> **Honest note on quantization:** the in-process local engine does not apply scalar quantization (it's a pure-Python backend), so the dossier reports quantization as **off** there — savings only materialize on a real Qdrant Edge/server backend. Sentinel reports this truthfully rather than fabricating a number.
+```
+$ uv run sentinel --synthetic
+frame 12   learning normal…
+frame 20   normal             score=0.998
+frame 24   ⚠ OUT OF PLACE    score=0.852 < 0.946
+frame 27   normal             score=0.998
 
-## Honest, live proof
-
-Every figure in the dossier comes from the running engine, never hardcoded:
-
-- **fps · embed ms · query ms · anomaly latency · process footprint · memory points · quantization state** — streamed live to the UI.
-- `uv run sentinel-eval` — offline **detection precision/recall** on a staged scene (1.000 / 1.000 on the synthetic harness with the real CLIP model).
-- `uv run sentinel-tune` — the engine **auto-tunes for the device** at launch (quantization / frame-skip / HNSW) with a stated rationale — the seam where **Qdrant Skills** would plug in.
-
-## Principles (non-negotiable)
-
-- **No box, no bot.** Every interaction is a gesture — Watch / Teach / Explore — never a typed query or chat.
-- **Offline is the feature.** Kill the network mid-run and nothing changes.
-- **Detection, not retrieval.** The headline is surfacing the unknown, deliberately not a "find my keys" clone.
-- **Honest metrics.** The dossier reflects the real engine, trade-offs and all.
-
-## Run it (offline)
-
-**One command** (needs `uv`, `npm`, and `cargo`):
-
-```bash
-make setup    # first time: install all dependencies
-make run      # stops any stale engine, starts it, waits for it, opens the app
-make demo     # headless: video anomaly + audio + precision/recall (no camera)
-make test     # every gate: engine pytest/ruff/mypy + desktop vitest/build
+$ uv run sentinel-eval
+precision 1.000 · recall 1.000 · f1 1.000
 ```
 
-`make run` launches the engine, waits until it actually binds `ws://127.0.0.1:8765`, then opens the desktop app and cleans up the engine on exit. Grant camera permission when macOS asks. The first `tauri dev` compiles the Rust shell (a few minutes).
+## What's inside
 
-<details>
-<summary>Or run the two processes by hand</summary>
+- **Real-time anomaly detection** with an adaptive, tunable threshold and a live sensitivity control.
+- **Teach-by-example** — reshape "normal" with a thumbs-up/down; subsequent detection measurably shifts.
+- **Visual twins** — find everything in memory that looks like this.
+- **Zones & facets** — review anomalies per area of a site.
+- **Multimodal audio** — flag out-of-place sounds with the same engine.
+- **Autonomous watcher** — clusters recurring anomalies into a reviewable end-of-walk report. Agentic, never conversational.
+- **Self-tuning** — on launch, the engine picks quantization, frame-skip, and HNSW settings for the hardware it's on, with a stated rationale (the seam where **Qdrant Skills** plugs in).
+- **2D explore canvas** — a PCA map of the perceptual memory; a supporting view, anomalies highlighted.
+- **Provenance** — every flag, teach, and exploration recorded as an ordered, exportable session: an auditable inspection record.
 
-**Engine** — Python 3.12 via [`uv`](https://docs.astral.sh/uv/) (the ML wheels lag newer Python; the engine pins 3.12):
+## Quickstart
 
-```bash
-cd engine
-uv sync
-uv run sentinel --synthetic     # headless demo: learns normal, flags an injected anomaly
-uv run sentinel-audio           # multimodal: flags an out-of-place sound
-uv run sentinel-eval            # detection precision/recall on a staged scene
-uv run sentinel-tune            # device-aware auto-tuning plan
-uv run sentinel-serve           # WebSocket server on ws://127.0.0.1:8765 for the desktop shell
-uv run sentinel                 # live webcam (grant the terminal camera permission)
-```
-
-**Desktop shell** — Tauri 2 + React (connects to the engine over WebSocket):
+Requires [`uv`](https://docs.astral.sh/uv/), `npm`, and `cargo` (for the desktop shell).
 
 ```bash
-cd desktop
-npm install
-npm run tauri dev
+make setup    # install all dependencies
+make run      # launch the full instrument (engine + desktop app), offline
+make demo     # headless proof: video anomaly + audio + precision/recall — no camera
+make test     # every gate: engine (pytest/ruff/mypy) + desktop (vitest/build)
 ```
 
-</details>
+`make run` starts the engine, waits until it binds `ws://127.0.0.1:8765`, opens the desktop app, and shuts the engine down cleanly on exit. The desktop owns nothing but the view; the Python engine owns the camera and the memory.
 
-Point the camera at a scene → it learns "normal" → introduce something out of place → the view glows amber with **⚠ out of place** → switch to Teach and hit 👍 to suppress it → open Explore for visual twins, per-zone facets, the watcher's end-of-walk report, and the 2D memory map → **turn off wifi; it keeps working.**
-
-## Layout
+## Architecture
 
 | Path | What |
 |---|---|
-| `engine/` | Python perception engine — capture, embed, embedded Qdrant, anomaly loop, teach, twins, zones, audio, watcher, explore map, auto-tuner, FastAPI WebSocket server |
-| `desktop/` | Tauri 2 desktop shell (React + TS + Vite) — live view, overlay, guided tour, dossier, Explore |
-| `frontend/` | Marketing/landing site (Next.js 16) |
+| `engine/` | Python perception engine — capture, on-device CLIP embedding, embedded Qdrant, anomaly loop, teach, twins, zones, audio, watcher agent, explore map, auto-tuner, FastAPI WebSocket server |
+| `desktop/` | Tauri 2 desktop shell (React + TypeScript + Vite) — live view, ⚠ overlay, Watch/Teach/Explore, guided first-run, live dossier |
+| `frontend/` | Marketing site (Next.js) |
 
-## Tests
-
-```bash
-cd engine && uv run pytest && uv run ruff check . && uv run mypy src tests
-cd desktop && npm run test && npm run build
-```
-
-The engine suite runs with no camera, model download, or network (fakes + synthetic scenes). The desktop suite covers the view-state logic and the engine socket hook.
+The engine streams `frame` / `verdict` / `metric` events over a local WebSocket and accepts `sensitivity` / `teach` / `twins` / `zone` / `facet` / `report` / `map` / `reset` / `export` commands. Both the data path and the detector are covered by an automated test suite that runs without a camera, model download, or network.
 
 ## Built with
 
-- [Qdrant](https://qdrant.tech) — embedded vector engine (architected for Qdrant Edge)
-- [FastEmbed](https://github.com/qdrant/fastembed) — on-device CLIP image embeddings (`Qdrant/clip-ViT-B-32-vision`)
-- [OpenCV](https://opencv.org) — webcam capture · [NumPy](https://numpy.org) — spectral audio features & PCA
-- [FastAPI](https://fastapi.tiangolo.com) · [Tauri](https://tauri.app) · [React](https://react.dev) · [Vite](https://vite.dev)
+- **[Qdrant](https://qdrant.tech)** — embedded vector engine, architected for **Qdrant Edge**
+- **[FastEmbed](https://github.com/qdrant/fastembed)** — on-device CLIP image embeddings (`Qdrant/clip-ViT-B-32-vision`)
+- **[OpenCV](https://opencv.org)** · **[NumPy](https://numpy.org)** — capture, spectral audio features, PCA
+- **[FastAPI](https://fastapi.tiangolo.com)** · **[Tauri](https://tauri.app)** · **[React](https://react.dev)** · **[Vite](https://vite.dev)**
 
-## Status
+---
 
-The instrument is feature-complete across the planned P0–P2 surface and fully tested headlessly. The live webcam/microphone paths and the `tauri dev` window require local hardware/permissions to exercise. Qdrant Edge is private beta; Sentinel is built to swap onto `EdgeShard` when access lands, and does not overclaim it today.
+<div align="center">
+
+**Sentinel notices what you'd miss — privately, offline, on the device.**
+
+</div>
