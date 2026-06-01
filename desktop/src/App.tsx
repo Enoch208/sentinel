@@ -1,49 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { VerdictEvent } from "./lib/types";
+import type { Mode } from "./lib/view";
+import { MODES, TOUR, nextTourStep, stateOf } from "./lib/view";
 import { useEngineSocket } from "./lib/useEngineSocket";
 import "./App.css";
 
 const ENGINE_URL = "ws://127.0.0.1:8765/ws";
-const MODES = ["watch", "teach", "explore"] as const;
-type Mode = (typeof MODES)[number];
-
-type Advance = "settled" | "flagged" | null;
-
-const TOUR: ReadonlyArray<{ mode: Mode; text: string; auto: Advance }> = [
-  {
-    mode: "watch",
-    text: "Sentinel is learning what's normal. Hold the scene steady for a few seconds.",
-    auto: "settled",
-  },
-  {
-    mode: "watch",
-    text: "Now introduce something out of place — a tool, a hand, an object.",
-    auto: "flagged",
-  },
-  {
-    mode: "teach",
-    text: "Caught it. Mark it 👍 expected or 👎 anomaly to tune what counts as normal.",
-    auto: null,
-  },
-  {
-    mode: "explore",
-    text: "Open Explore to see its visual twins — everything that looks like this.",
-    auto: null,
-  },
-];
-
-type ViewState = {
-  key: "idle" | "warming" | "normal" | "flagged";
-  label: string;
-};
-
-function stateOf(verdict: VerdictEvent | null): ViewState {
-  if (!verdict) return { key: "idle", label: "waiting for the engine" };
-  if (verdict.warming) return { key: "warming", label: "learning normal…" };
-  if (verdict.flagged) return { key: "flagged", label: "⚠ out of place" };
-  return { key: "normal", label: "normal" };
-}
 
 export default function App() {
   const { status, frame, verdict, metric, twins, send, reconnect } =
@@ -61,12 +23,8 @@ export default function App() {
 
   useEffect(() => {
     if (tourStep === null) return;
-    const step = TOUR[tourStep];
-    if (step.auto === "settled" && verdict && !verdict.warming) {
-      setTourStep(tourStep + 1);
-    } else if (step.auto === "flagged" && verdict?.flagged) {
-      setTourStep(tourStep + 1);
-    }
+    const next = nextTourStep(tourStep, verdict);
+    if (next !== tourStep) setTourStep(next);
   }, [verdict, tourStep]);
 
   const onSensitivity = (value: number) => {
