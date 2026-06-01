@@ -21,6 +21,7 @@ dependencies = [
 sentinel = "sentinel_engine.cli:main"
 sentinel-serve = "sentinel_engine.server:run"
 sentinel-eval = "sentinel_engine.eval:main"
+sentinel-audio = "sentinel_engine.audio:main"
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.7", "mypy>=1.13", "httpx>=0.27"]
