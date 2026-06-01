@@ -59,6 +59,7 @@ class EngineController:
         fps_window: int = 30,
         jpeg_width: int = 480,
         jpeg_quality: int = 70,
+        anomaly_history: int = 512,
     ) -> None:
         self._pipeline = pipeline
         self._store = store
@@ -73,7 +74,7 @@ class EngineController:
         self._jpeg_quality = jpeg_quality
         self._zone = "default"
         self._zone_flags: dict[str, int] = {}
-        self._anomalies: list[AnomalyRecord] = []
+        self._anomalies: deque[AnomalyRecord] = deque(maxlen=anomaly_history)
 
     def frame_event(self, frame: Frame) -> FrameEvent:
         jpeg = to_jpeg_base64(frame.image, self._jpeg_width, self._jpeg_quality)
@@ -233,7 +234,7 @@ class EngineController:
         return MapEvent(points=points)
 
     def _report(self) -> ReportEvent:
-        report = cluster_anomalies(self._anomalies)
+        report = cluster_anomalies(list(self._anomalies))
         return ReportEvent(
             total=report.total,
             clusters=[
@@ -253,6 +254,7 @@ def build_controller(
     *,
     in_memory: bool = False,
     session: SessionLog | None = None,
+    anomaly_history: int = 512,
 ) -> EngineController:
     if in_memory:
         store = PerceptionStore.in_memory(
@@ -291,4 +293,5 @@ def build_controller(
         session,
         jpeg_width=settings.jpeg_width,
         jpeg_quality=settings.jpeg_quality,
+        anomaly_history=anomaly_history,
     )

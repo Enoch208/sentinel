@@ -113,6 +113,21 @@ def test_memory_map_projects_normal_and_anomalies() -> None:
     assert all(-1.0001 <= point.x <= 1.0001 for point in event.points)
 
 
+def test_anomaly_history_is_bounded() -> None:
+    controller = build_controller(
+        Settings(warmup_frames=8, skip_hamming=0),
+        FakeEmbedder(),
+        in_memory=True,
+        anomaly_history=4,
+    )
+    for frame in SyntheticScene(total=60, anomaly_at=tuple(range(20, 60))).frames():
+        controller.process_frame(frame)
+
+    event = controller.handle_command({"type": "report"})
+    assert isinstance(event, ReportEvent)
+    assert event.total <= 4
+
+
 def test_watch_report_clusters_anomalies() -> None:
     controller = _controller()
     _run(controller)
