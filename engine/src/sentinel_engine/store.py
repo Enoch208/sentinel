@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import Any, cast
 
 import numpy as np
@@ -63,6 +64,17 @@ class PerceptionStore:
         client = QdrantClient(location=":memory:")
         return cls(client, collection, vector_name, dim, quantize)
 
+    @classmethod
+    def connect(
+        cls,
+        url: str,
+        collection: str,
+        vector_name: str,
+        dim: int,
+        quantize: bool = True,
+    ) -> PerceptionStore:
+        return cls(QdrantClient(url=url), collection, vector_name, dim, quantize)
+
     def _vectors_config(self) -> dict[str, qm.VectorParams]:
         return {
             self._name: qm.VectorParams(
@@ -91,6 +103,12 @@ class PerceptionStore:
                 self._client.create_collection(
                     self._collection,
                     vectors_config=self._vectors_config(),
+                )
+            with contextlib.suppress(Exception):
+                self._client.create_payload_index(
+                    self._collection,
+                    field_name="zone",
+                    field_schema=qm.PayloadSchemaType.KEYWORD,
                 )
         self.quantization_active = self._quantization_in_effect()
 

@@ -39,7 +39,7 @@ export function Dossier({
       />
       <Metric
         label="quantization"
-        value={metric ? (metric.quantized ? "on" : "off (local)") : "—"}
+        value={metric ? (metric.quantized ? "on · int8" : "off (local)") : "—"}
       />
     </div>
   );

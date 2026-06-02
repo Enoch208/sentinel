@@ -1,11 +1,12 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup run demo test stop clean pack-engine dmg release
+.PHONY: help setup run qdrant run-server demo test stop clean pack-engine dmg release
 
 help:
 	@echo "Sentinel — make targets:"
 	@echo "  make setup   install engine + desktop + frontend dependencies"
-	@echo "  make run     launch the full instrument (engine + desktop app)"
+	@echo "  make run         launch the full instrument (engine + desktop app)"
+	@echo "  make run-server  launch with a real Qdrant (Docker) — quantization genuinely on"
 	@echo "  make demo    headless demos: video anomaly, audio, precision/recall (no camera)"
 	@echo "  make test    run every gate (engine pytest/ruff/mypy + desktop vitest/build)"
 	@echo "  make dmg     build a standalone macOS .app/.dmg (bundles engine + model)"
@@ -20,6 +21,13 @@ setup:
 
 run:
 	bash scripts/run.sh
+
+qdrant:
+	@docker start sentinel-qdrant >/dev/null 2>&1 || docker run -d --name sentinel-qdrant -p 6333:6333 qdrant/qdrant >/dev/null
+	@for i in $$(seq 1 30); do nc -z 127.0.0.1 6333 2>/dev/null && break; sleep 1; done
+
+run-server: qdrant
+	SENTINEL_QDRANT_URL=http://127.0.0.1:6333 SENTINEL_QUANTIZE=1 bash scripts/run.sh
 
 demo:
 	cd engine && uv run sentinel --synthetic --db /tmp/sentinel-demo.db && uv run sentinel-audio && uv run sentinel-eval
@@ -50,6 +58,7 @@ release:
 
 stop:
 	pkill -f sentinel-serve || true
+	docker stop sentinel-qdrant 2>/dev/null || true
 
 clean: stop
 	rm -rf engine/sentinel.db engine/sessions /tmp/sentinel-demo.db

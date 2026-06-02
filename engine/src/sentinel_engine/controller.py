@@ -260,6 +260,14 @@ def build_controller(
         store = PerceptionStore.in_memory(
             settings.collection, settings.vector_name, embedder.dim
         )
+    elif settings.qdrant_url:
+        store = PerceptionStore.connect(
+            settings.qdrant_url,
+            settings.collection,
+            settings.vector_name,
+            embedder.dim,
+            settings.quantize,
+        )
     else:
         store = PerceptionStore.open(
             settings.db_path,
