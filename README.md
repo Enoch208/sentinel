@@ -45,7 +45,7 @@ Every interaction is a gesture — **Watch / Teach / Explore** — never a typed
 - **It runs the entire pipeline on the device.** Capture → embed → store → query → flag, all in-process, with no network on the call path. The "wifi-off, still working" moment is structural, not staged.
 - **It rides the 2026 stack.** Embedded Qdrant today, architected to drop onto **Qdrant Edge** with no change to the query logic; an autonomous **watcher agent**; and a **Skills-style auto-tuner** that fits the engine to the device.
 - **It's multimodal.** The same vector-anomaly loop runs over a **microphone** to flag out-of-place *sounds* — true multimodal on the edge.
-- **It's honest.** Every number in the dossier is read live from the running engine. Where a capability only materializes on Edge (quantization savings), it says so rather than faking a figure.
+- **It's honest.** Every number in the dossier is read live from the running engine. Quantization reads `off` on the pure-embedded build (which doesn't quantize) and flips to `on · int8` against a real Qdrant or on Edge — it never fakes the figure.
 
 ## How it works
 
@@ -76,7 +76,7 @@ Sentinel runs Qdrant **in-process and fully offline** (`QdrantClient(path=…)`)
 | **Facet** | per-zone anomaly review — tag frames by area, count anomalies where they happened |
 | **Recommend** | example-based retrieval behind teach-by-example (👍/👎 → positive/negative) |
 | **Scroll → on-device PCA** | projects the whole memory to a 2D map, anomalies highlighted |
-| **Scalar quantization** | configured for a small on-device footprint (active on Edge; reported honestly) |
+| **Scalar quantization** | int8 vectors for a small on-device footprint — genuinely active with `make run-server` (real Qdrant) and on Edge; reported honestly (`off` on the pure-embedded build, which doesn't quantize) |
 
 Collection `perceptions`: dense `clip` vectors (Cosine), payload `ts · frame_id · zone · flagged`, quantization configured.
 
@@ -112,10 +112,11 @@ precision 1.000 · recall 1.000 · f1 1.000
 Requires [`uv`](https://docs.astral.sh/uv/), `npm`, and `cargo` (for the desktop shell).
 
 ```bash
-make setup    # install all dependencies
-make run      # launch the full instrument (engine + desktop app), offline
-make demo     # headless proof: video anomaly + audio + precision/recall — no camera
-make test     # every gate: engine (pytest/ruff/mypy) + desktop (vitest/build)
+make setup       # install all dependencies
+make run         # launch the full instrument (embedded Qdrant, in-process, offline)
+make run-server  # launch against a real Qdrant (Docker) — int8 quantization genuinely on, still offline
+make demo        # headless proof: video anomaly + audio + precision/recall — no camera
+make test        # every gate: engine (pytest/ruff/mypy) + desktop (vitest/build)
 ```
 
 `make run` starts the engine, waits until it binds `ws://127.0.0.1:8765`, opens the desktop app, and shuts the engine down cleanly on exit. The desktop owns nothing but the view; the Python engine owns the camera and the memory.
