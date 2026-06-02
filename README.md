@@ -167,4 +167,6 @@ The engine streams `frame` / `verdict` / `metric` events over a local WebSocket 
 
 **Sentinel notices what you'd miss — privately, offline, on the device.**
 
+[Read the thread →](https://x.com/dreyethh/status/2061691220275998981?s=46)
+
 </div>
