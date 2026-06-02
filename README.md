@@ -18,6 +18,12 @@ No query box. No chatbot. No cloud. Built for the Qdrant **"Think Outside the Bo
 
 ---
 
+## ▶ Demo
+
+https://github.com/user-attachments/assets/4e2bc306-3f56-44c1-b56a-d7b86354d4ca
+
+---
+
 ## The idea
 
 Vector search began as context for chatbots, then memory for agents. The third wave is **embedded** — AI moving to where decisions actually happen: cameras, robots, kiosks, factory floors, where the network is unreliable, latency budgets are tight, and data must stay private and local.
