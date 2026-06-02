@@ -14,6 +14,8 @@
 
 No query box. No chatbot. No cloud. Built for the Qdrant **"Think Outside the Bot"** Hackathon · embedded Qdrant, architected for **Qdrant Edge**.
 
+[Read the thread →](https://x.com/dreyethh/status/2061691220275998981?s=46)
+
 </div>
 
 ---
@@ -166,7 +168,5 @@ The engine streams `frame` / `verdict` / `metric` events over a local WebSocket 
 <div align="center">
 
 **Sentinel notices what you'd miss — privately, offline, on the device.**
-
-[Read the thread →](https://x.com/dreyethh/status/2061691220275998981?s=46)
 
 </div>
